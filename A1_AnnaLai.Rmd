@@ -8,6 +8,7 @@ output: html_notebook
 # Data set selection and initial Processing
 
 ## Data Selection
+Go to https://www.ncbi.nlm.nih.gov/gds/advanced
 ## Data cleaning and HUGO mapping
 ## Data Normalization
 ## Citations (if any)
