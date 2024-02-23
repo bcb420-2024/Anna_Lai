@@ -9,11 +9,12 @@ output:
     toc_depth: 2
 bibliography: assignment_reference.bib
 csl: biomed-central.csl
+nocite: '@*'
 ---
 
 ## Setup
 
-```{r setup, results='hide'}
+```{r setup, message=FALSE, warning=FALSE, results='hide'}
 packages_to_install <- c("BiocManager", "RSQLite", "readr")
 for (package in packages_to_install) {
   if (!requireNamespace(package, quietly = TRUE)) {
@@ -38,21 +39,104 @@ Please refer to the GitHub Wiki Journal [Data Selection](https://github.com/bcb4
 
 The Data can be found here: [	Transcriptional profiling of organoid glomeruli isolated from human kidney organoids modelling congenital nephrotic syndrome](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE205647). There are two files, the gene names and the gene counts.
 
-```{r warning=FALSE}
+## About the Data and the experimentment
+The paper studied a neuphoric genetic disorder, Steroid-resistant nephrotic syndrome (SRNS). NPHS2 encodes a gene that was found to be mutated at a high rate in SRNS, specifically caused by the missense mutation in human DNA. Researchers studied point mutation in induced pluripotent stem cell (iPSC) of NPHS2.
+
++ Location: Australia  
++ Institution: MRRI, Royal Children's Hospital  
++ Paper submission date: June 07, 2022  
++ Techonoloy used: TSStrimRNAs, high-throughput RNA sequencing  
++ Platform used: Illumina NovaSeq 6000  
++ Number of samples: 27  
++ Number of cell lines: 8
+
+```{r read_file, warning=FALSE}
 files <- c("GSE205647_counts.txt", "GSE205647_genes.txt")
 
 counts_data <- read.table(files[1], header = TRUE)
-head(counts_data)
-
+# View(counts_data) # un-comment to see the entire table
 genes_data <- read.table(files[2], header = TRUE)
-head(genes_data)
-
+# View(genes_data) # un-comment to see the entire table
 
 print(nrow(counts_data))
 print(nrow(genes_data))
 
+print(colnames(counts_data))
+print(colnames(genes_data))
+```
+
+The first four columns for the two tables are the same.
+
+I will compare the two and see if they are actually identical.
+
+```{r identical_files}
+sorted_counts_data <- counts_data[order(counts_data$Gene.ID, counts_data$Chrom), ]
+sorted_genes_data <- genes_data[order(genes_data$Gene.ID, genes_data$Chrom), ]
+
+sorted_first_four_cols_of_counts_data <- sorted_counts_data[, 1:4]
+names(sorted_first_four_cols_of_counts_data) <- c("Gene.ID", "Chrom", "Gene.Name", "Biotype")
+names(sorted_genes_data) <- c("Gene.ID", "Chrom", "Gene.Name", "Biotype")
+
+attr(sorted_first_four_cols_of_counts_data, "row.names") <- NULL
+attr(sorted_genes_data, "row.names") <- NULL
+
+all.equal(sorted_first_four_cols_of_counts_data, sorted_genes_data)
+```
+From the above, we conclude that genes.txt. is a subset of counts.txt. We will move on to only investigate counts.txt.
+
+#### Rename the column name for easier identification.
+All the samples were processed on December 28, 2021. The method of processing sequence read is Transcription Start Site Trimmed RNA (TSStrimRNAs).
+```{r rename_columns}
+rm_prefix <- "X211101_A01221_0077_"
+rm_suffix <- "\\.20211028_TSStrmRNA$"
+
+new_col_names <- sub(paste0("^", rm_prefix), "", colnames(counts_data))
+
+new_col_names <- sub(rm_suffix, "", new_col_names)
+
+new_col_names 
+```
+From the paper, Table 2 [@citation], we see that five different point mutations, G92C, P118L, R138Q, R168H, and, R291W, were studied.
+
+The table shows PCR primers for amplification before sequencing and Sanger sequencing primers for each variant line generated.  
+F, forward; R, reverse.  
+
+
+```{r mutation_table, message=FALSE, echo = FALSE}
+# From the paper, explanation on the mutation numbers
+variant_data <- data.frame(
+  "Sequence Variant" = c("c.274G>T", "c.353C>T", "c.413G>A", "c.503G>A", "c.871C>T"),
+  "Protein Change" = c("p.G92C", "p.P118L", "p.R138Q", "p.R168H", "p.R291W"),
+  "PCR Primers" = c("F-CCACGGTGGTGGACGTGGATG", "F-CCTGTGAACTCTGACTACTC", "F-TTTGAAGCAGCCTCAGAAG", "F-GCTATTCTGATTACTTCTGG", "F-CTTATTTGGTCAGTTGTACCC"),
+  "Sequencing Primers" = c("R-CCTTTGCCAAGTTGCTTCGTC CCAACCTGTACCACACTCG", "R-CTTCCTGTTCACATTTGAG CTTCCTGTTCACATTTGAG", "R-GCATGGGTTGAAGAAATTGG AAGCTAGTGCAGAACTCAC", "R-GTACCTTCACAGTAACATCC AACGAATATGACATGGAGG", "R-CTGCCTCCCTTCATTCTTCAC AACTGAGCACAGCTCATCA")
+)
+
+knitr::kable(variant_data, format = "html")
+```
+
+The 8 cell lines are:  
+iPSC lines generated in lab: GE_Control, GE_R168H, GE_G92C, GE_P118L, GE_R138Q, GE_R291W  
+iPSC generated from blood cell of patient with SRNS: PD_Control, PD_R168H  
+
+GE, gene-edited lines; PD, patient-derived lines.  
+
+Note that R138Q mutation is most commonly seen in infantile and childhood SRNS. All the other cell lines contains mutation that were reported as disease inducing. 
+
+## Data cleaning
+
+### Remove gene with no expression at all in all conditions
+```{r remove_no_exp}
+selected_columns <- counts_data[, 5:ncol(counts_data)]
+row_sums <- apply(selected_columns, 1, sum)
+rows_to_keep <- row_sums > 1
+filtered_counts_data <- counts_data[rows_to_keep,]
+```
+The number of genes remained after removing the genes without expression is `r nrow(filtered_counts_data)`. 
+
+### Investigate gene dupication in the file
+```{r duplicate}
 # print duplicate count by Gene.ID
-duplicates_count <- counts_data %>% 
+duplicates_count <- filtered_counts_data%>% 
   group_by(Gene.ID) %>% 
   mutate(duplicate_count = n()) %>% 
   filter(duplicate_count > 1)
@@ -60,27 +144,46 @@ duplicates_count <- counts_data %>%
 print(nrow(duplicates_count))
 
 # print duplicate count by Gene.Name
-duplicates_count <- genes_data %>% 
+duplicates_count <- filtered_counts_data %>% 
   group_by(Gene.Name, Chrom) %>% 
   mutate(duplicate_count = n()) %>% 
   filter(duplicate_count > 1) %>% 
-  summarize(duplicate_count = n_distinct(Gene.ID))
+  summarize(duplicate_count = n_distinct(Gene.ID))%>%
+  arrange(desc(duplicate_count))
 
 duplicates_count
-```
-The number of duplicated genes:
-```{r}
-print(nrow(duplicates_count))
-head(duplicates_count)
+length(unique(duplicates_count$Gene.Name))
 ```
 
+From the above we see that there is no gene with the same Ensembl ID. Each of them are unique. However, there are `r length(unique(duplicates_count$Gene.Name))` genes duplicates when grouped by gene symbol. Upon further investigation, some of the gene are located at a different chromosome, hence, the number of duplication of gene paired chromosome location is calculated. The number is `r nrow(duplicates_count)`. 
 
+At this stage, since each gene has an unique Ensembl ID, we will not discard any gene from the `r print(nrow(filtered_counts_data))` gene pool.
 
-As the file genes contain the same first four column as the counts file, we will proceed with the counts file only. 
+## HUGO mapping
+The data contains Ensembl gene ID and HUGO gene symbol. The following code does HUGO gene mapping of the dataset nevertheless. 
+```{r hugo}
 
-## Data cleaning and HUGO mapping
+```
 
 ## Data Normalization
+
+## Questions and answers
+
+#### Why is the dataset of interest to you?
+#### What are the control and test conditions of the dataset?
+#### How many samples in each of the conditions of your dataset?
+- The control condition (One sample): iPSC blood sample, unaffected relative
+- The Diseased condition (Two samples): iPSC allelic control fibroblast cell line, homozygous with R168H mutation cells from patient blood 
+
+#### Were there expression values that were not unique for specific genes? How did you handle these?
+#### Were there expression values that could not be mapped to current HUGO symbols?
+All the genes are mapped the HUGO symbols. However, there are some gene duplicates with the same HUGO symbols but different Ensembl ID. 
+#### Were there any outliers in your dataset? How were they handled in the originating paper? How many outliers were removed?
+•	How did you handle replicates?
+•	What is the final coverage of your dataset?
+
+2. [What are the control and test conditions of the dataset?](#q2)
+
 
 ## Citations (if any)
 

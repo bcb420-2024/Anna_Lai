@@ -384,10 +384,14 @@ display: none;
 <li><a href="#setup" id="toc-setup">Setup</a></li>
 <li><a href="#data-selection" id="toc-data-selection">Data
 Selection</a></li>
-<li><a href="#data-cleaning-and-hugo-mapping" id="toc-data-cleaning-and-hugo-mapping">Data cleaning and HUGO
-mapping</a></li>
+<li><a href="#about-the-data-and-the-experimentment" id="toc-about-the-data-and-the-experimentment">About the Data and the
+experimentment</a></li>
+<li><a href="#data-cleaning" id="toc-data-cleaning">Data
+cleaning</a></li>
+<li><a href="#hugo-mapping" id="toc-hugo-mapping">HUGO mapping</a></li>
 <li><a href="#data-normalization" id="toc-data-normalization">Data
 Normalization</a></li>
+<li><a href="#questions-and-answers" id="toc-questions-and-answers">Questions and answers</a></li>
 <li><a href="#citations-if-any" id="toc-citations-if-any">Citations (if
 any)</a></li>
 </ul>
@@ -404,49 +408,12 @@ for (package in packages_to_install) {
 }
 
 library(BiocManager)
-library(GEOmetadb)</code></pre>
-<pre><code>## Loading required package: GEOquery</code></pre>
-<pre><code>## Loading required package: Biobase</code></pre>
-<pre><code>## Loading required package: BiocGenerics</code></pre>
-<pre><code>## 
-## Attaching package: &#39;BiocGenerics&#39;</code></pre>
-<pre><code>## The following objects are masked from &#39;package:stats&#39;:
-## 
-##     IQR, mad, sd, var, xtabs</code></pre>
-<pre><code>## The following objects are masked from &#39;package:base&#39;:
-## 
-##     anyDuplicated, aperm, append, as.data.frame, basename, cbind,
-##     colnames, dirname, do.call, duplicated, eval, evalq, Filter, Find,
-##     get, grep, grepl, intersect, is.unsorted, lapply, Map, mapply,
-##     match, mget, order, paste, pmax, pmax.int, pmin, pmin.int,
-##     Position, rank, rbind, Reduce, rownames, sapply, setdiff, sort,
-##     table, tapply, union, unique, unsplit, which.max, which.min</code></pre>
-<pre><code>## Welcome to Bioconductor
-## 
-##     Vignettes contain introductory material; view with
-##     &#39;browseVignettes()&#39;. To cite Bioconductor, see
-##     &#39;citation(&quot;Biobase&quot;)&#39;, and for packages &#39;citation(&quot;pkgname&quot;)&#39;.</code></pre>
-<pre><code>## Setting options(&#39;download.file.method.GEOquery&#39;=&#39;auto&#39;)</code></pre>
-<pre><code>## Setting options(&#39;GEOquery.inmemory.gpl&#39;=FALSE)</code></pre>
-<pre class="r"><code>library(RSQLite)
+library(GEOmetadb)
+library(RSQLite)
 library(readr)
 library(utils)
 library(base)
 library(dplyr)</code></pre>
-<pre><code>## 
-## Attaching package: &#39;dplyr&#39;</code></pre>
-<pre><code>## The following object is masked from &#39;package:Biobase&#39;:
-## 
-##     combine</code></pre>
-<pre><code>## The following objects are masked from &#39;package:BiocGenerics&#39;:
-## 
-##     combine, intersect, setdiff, union</code></pre>
-<pre><code>## The following objects are masked from &#39;package:stats&#39;:
-## 
-##     filter, lag</code></pre>
-<pre><code>## The following objects are masked from &#39;package:base&#39;:
-## 
-##     intersect, setdiff, setequal, union</code></pre>
 </div>
 <div id="data-selection" class="section level2">
 <h2>Data Selection</h2>
@@ -456,228 +423,258 @@ Selection</a>.</p>
 profiling of organoid glomeruli isolated from human kidney organoids
 modelling congenital nephrotic syndrome</a>. There are two files, the
 gene names and the gene counts.</p>
+</div>
+<div id="about-the-data-and-the-experimentment" class="section level2">
+<h2>About the Data and the experimentment</h2>
+<p>The paper studied a neuphoric genetic disorder, Steroid-resistant
+nephrotic syndrome (SRNS). NPHS2 encodes a gene that was found to be
+mutated at a high rate in SRNS, specifically caused by the missense
+mutation in human DNA. Researchers studied point mutation in induced
+pluripotent stem cell (iPSC) of NPHS2.</p>
+<ul>
+<li>Location: Australia<br />
+</li>
+<li>Institution: MRRI, Royal Children’s Hospital<br />
+</li>
+<li>Paper submission date: June 07, 2022<br />
+</li>
+<li>Techonoloy used: TSStrimRNAs, high-throughput RNA sequencing<br />
+</li>
+<li>Platform used: Illumina NovaSeq 6000<br />
+</li>
+<li>Number of samples: 27<br />
+</li>
+<li>Number of cell lines: 8</li>
+</ul>
 <pre class="r"><code>files &lt;- c(&quot;GSE205647_counts.txt&quot;, &quot;GSE205647_genes.txt&quot;)
 
 counts_data &lt;- read.table(files[1], header = TRUE)
-head(counts_data)</code></pre>
-<pre><code>##           Gene.ID Chrom   Gene.Name                            Biotype
-## 1 ENSG00000223972     1     DDX11L1 transcribed_unprocessed_pseudogene
-## 2 ENSG00000227232     1      WASH7P             unprocessed_pseudogene
-## 3 ENSG00000278267     1   MIR6859-1                              miRNA
-## 4 ENSG00000243485     1 MIR1302-2HG                             lncRNA
-## 5 ENSG00000284332     1   MIR1302-2                              miRNA
-## 6 ENSG00000237613     1     FAM138A                             lncRNA
-##   X211101_A01221_0077_ML215210_AD2101.808.3.CTL.D7.14.OG1_MAN.20211028_TSStrmRNA
-## 1                                                                              0
-## 2                                                                             72
-## 3                                                                             41
-## 4                                                                              2
-## 5                                                                              0
-## 6                                                                              0
-##   X211101_A01221_0077_ML215211_AD2101.808.3.CTL.D7.14.OG2_MAN.20211028_TSStrmRNA
-## 1                                                                              0
-## 2                                                                            108
-## 3                                                                             69
-## 4                                                                              3
-## 5                                                                              0
-## 6                                                                              0
-##   X211101_A01221_0077_ML215212_AD2112.808.3.CTL.D7.14_MAN.20211028_TSStrmRNA
-## 1                                                                          0
-## 2                                                                        102
-## 3                                                                         53
-## 4                                                                          0
-## 5                                                                          0
-## 6                                                                          0
-##   X211101_A01221_0077_ML215213_AD2141.808.5.CTL.D7.14.OG2_MAN.20211028_TSStrmRNA
-## 1                                                                              0
-## 2                                                                            105
-## 3                                                                             76
-## 4                                                                             14
-## 5                                                                              0
-## 6                                                                              0
-##   X211101_A01221_0077_ML215214_AD2156.808.5.CTL.D7.14.OG1_MAN.20211028_TSStrmRNA
-## 1                                                                              0
-## 2                                                                             87
-## 3                                                                             29
-## 4                                                                              0
-## 5                                                                              0
-## 6                                                                              0
-##   X211101_A01221_0077_ML215215_AD2156.808.5.CTL.D7.14.OG2_MAN.20211028_TSStrmRNA
-## 1                                                                              0
-## 2                                                                             90
-## 3                                                                             63
-## 4                                                                              1
-## 5                                                                              0
-## 6                                                                              0
-##   X211101_A01221_0077_ML215216_AD2044.G92C.D7.14_MAN.20211028_TSStrmRNA
-## 1                                                                     0
-## 2                                                                   111
-## 3                                                                    71
-## 4                                                                     2
-## 5                                                                     0
-## 6                                                                     0
-##   X211101_A01221_0077_ML215217_AD2124.G92C.D7.14.OG2_MAN.20211028_TSStrmRNA
-## 1                                                                         0
-## 2                                                                       153
-## 3                                                                        79
-## 4                                                                         0
-## 5                                                                         0
-## 6                                                                         0
-##   X211101_A01221_0077_ML215218_AD2126.G92C.D7.14.OG1_MAN.20211028_TSStrmRNA
-## 1                                                                         0
-## 2                                                                        73
-## 3                                                                        68
-## 4                                                                        10
-## 5                                                                         0
-## 6                                                                         0
-##   X211101_A01221_0077_ML215219_AD2043.P118L.D7.14_MAN.20211028_TSStrmRNA
-## 1                                                                      0
-## 2                                                                    116
-## 3                                                                     69
-## 4                                                                      7
-## 5                                                                      0
-## 6                                                                      0
-##   X211101_A01221_0077_ML215220_AD2048.P118L.D7.14_MAN.20211028_TSStrmRNA
-## 1                                                                      0
-## 2                                                                    111
-## 3                                                                     57
-## 4                                                                      0
-## 5                                                                      0
-## 6                                                                      0
-##   X211101_A01221_0077_ML215221_AD2125.P118L.D7.14.OG1_MAN.20211028_TSStrmRNA
-## 1                                                                          0
-## 2                                                                         48
-## 3                                                                         28
-## 4                                                                          0
-## 5                                                                          0
-## 6                                                                          0
-##   X211101_A01221_0077_ML215222_AD2050.R138Q.C83.D7.14_MAN.20211028_TSStrmRNA
-## 1                                                                          0
-## 2                                                                        103
-## 3                                                                         76
-## 4                                                                          3
-## 5                                                                          0
-## 6                                                                          0
-##   X211101_A01221_0077_ML215223_AD2108.R138Q.C83.D7.14.OG1_MAN.20211028_TSStrmRNA
-## 1                                                                              0
-## 2                                                                            116
-## 3                                                                             70
-## 4                                                                              8
-## 5                                                                              0
-## 6                                                                              0
-##   X211101_A01221_0077_ML215224_AD2110.R138Q.C83.D7.14.OG2_MAN.20211028_TSStrmRNA
-## 1                                                                              0
-## 2                                                                             83
-## 3                                                                             56
-## 4                                                                              3
-## 5                                                                              0
-## 6                                                                              0
-##   X211101_A01221_0077_ML215225_AD2041.R168H.D7.14_MAN.20211028_TSStrmRNA
-## 1                                                                      0
-## 2                                                                    110
-## 3                                                                     80
-## 4                                                                      4
-## 5                                                                      0
-## 6                                                                      0
-##   X211101_A01221_0077_ML215226_AD2145.R168H.D7.14.OG1_MAN.20211028_TSStrmRNA
-## 1                                                                          0
-## 2                                                                        112
-## 3                                                                         48
-## 4                                                                          0
-## 5                                                                          0
-## 6                                                                          0
-##   X211101_A01221_0077_ML215227_AD2155.R168H.D7.14.OG1_MAN.20211028_TSStrmRNA
-## 1                                                                          0
-## 2                                                                         93
-## 3                                                                         48
-## 4                                                                          2
-## 5                                                                          0
-## 6                                                                          0
-##   X211101_A01221_0077_ML215228_AD2052.R291W.D7.14.OG2_MAN.20211028_TSStrmRNA
-## 1                                                                          0
-## 2                                                                        179
-## 3                                                                        106
-## 4                                                                          7
-## 5                                                                          0
-## 6                                                                          0
-##   X211101_A01221_0077_ML215229_AD2127.R291W.D7.14.OG1_MAN.20211028_TSStrmRNA
-## 1                                                                          0
-## 2                                                                        105
-## 3                                                                         94
-## 4                                                                         10
-## 5                                                                          0
-## 6                                                                          0
-##   X211101_A01221_0077_ML215230_AD2131.R291W.D7.14.OG1_MAN.20211028_TSStrmRNA
-## 1                                                                          0
-## 2                                                                         97
-## 3                                                                         44
-## 4                                                                          4
-## 5                                                                          0
-## 6                                                                          0
-##   X211101_A01221_0077_ML215231_AD2119.R168H.RG.Un.D7.14.OG1_MAN.20211028_TSStrmRNA
-## 1                                                                                0
-## 2                                                                               84
-## 3                                                                              125
-## 4                                                                               33
-## 5                                                                                0
-## 6                                                                                0
-##   X211101_A01221_0077_ML215232_AD2122.R168H.RG.Un.D7.14.OG2_MAN.20211028_TSStrmRNA
-## 1                                                                                0
-## 2                                                                               53
-## 3                                                                               71
-## 4                                                                               28
-## 5                                                                                0
-## 6                                                                                0
-##   X211101_A01221_0077_ML215233_AD2122.R168H.RG.Un.D7.14.OG1_MAN.20211028_TSStrmRNA
-## 1                                                                                0
-## 2                                                                              100
-## 3                                                                              123
-## 4                                                                               56
-## 5                                                                                0
-## 6                                                                                0
-##   X211101_A01221_0077_ML215234_AD2118.R168H.RG.Pro.D7.14.OG2_MAN.20211028_TSStrmRNA
-## 1                                                                                 0
-## 2                                                                                47
-## 3                                                                                73
-## 4                                                                                33
-## 5                                                                                 0
-## 6                                                                                 0
-##   X211101_A01221_0077_ML215235_AD2121.R168H.RG.Pro.D7.14.OG2_MAN.20211028_TSStrmRNA
-## 1                                                                                 0
-## 2                                                                                48
-## 3                                                                                85
-## 4                                                                                45
-## 5                                                                                 0
-## 6                                                                                 0
-##   X211101_A01221_0077_ML215236_AD2121.R168H.RG.Pro.D7.14.OG1_MAN.20211028_TSStrmRNA
-## 1                                                                                 0
-## 2                                                                                54
-## 3                                                                                66
-## 4                                                                                31
-## 5                                                                                 0
-## 6                                                                                 0
-##   X211101_A01221_0077_ML215237_NTC.2_MAN.20211028_TSStrmRNA
-## 1                                                         0
-## 2                                                         0
-## 3                                                         0
-## 4                                                         0
-## 5                                                         0
-## 6                                                         0</code></pre>
-<pre class="r"><code>genes_data &lt;- read.table(files[2], header = TRUE)
-head(genes_data)</code></pre>
-<pre><code>##           Gene.ID Chrom Gene.Name              Biotype
-## 1 ENSG00000000457     1     SCYL3 processed_transcript
-## 2 ENSG00000000460     1  C1orf112       protein_coding
-## 3 ENSG00000000938     1       FGR processed_transcript
-## 4 ENSG00000000971     1       CFH      retained_intron
-## 5 ENSG00000001460     1     STPG1 processed_transcript
-## 6 ENSG00000001461     1    NIPAL3       protein_coding</code></pre>
-<pre class="r"><code>print(nrow(counts_data))</code></pre>
+# View(counts_data) # un-comment to see the entire table
+genes_data &lt;- read.table(files[2], header = TRUE)
+# View(genes_data) # un-comment to see the entire table
+
+print(nrow(counts_data))</code></pre>
 <pre><code>## [1] 60671</code></pre>
 <pre class="r"><code>print(nrow(genes_data))</code></pre>
 <pre><code>## [1] 60671</code></pre>
+<pre class="r"><code>print(colnames(counts_data))</code></pre>
+<pre><code>##  [1] &quot;Gene.ID&quot;                                                                          
+##  [2] &quot;Chrom&quot;                                                                            
+##  [3] &quot;Gene.Name&quot;                                                                        
+##  [4] &quot;Biotype&quot;                                                                          
+##  [5] &quot;X211101_A01221_0077_ML215210_AD2101.808.3.CTL.D7.14.OG1_MAN.20211028_TSStrmRNA&quot;   
+##  [6] &quot;X211101_A01221_0077_ML215211_AD2101.808.3.CTL.D7.14.OG2_MAN.20211028_TSStrmRNA&quot;   
+##  [7] &quot;X211101_A01221_0077_ML215212_AD2112.808.3.CTL.D7.14_MAN.20211028_TSStrmRNA&quot;       
+##  [8] &quot;X211101_A01221_0077_ML215213_AD2141.808.5.CTL.D7.14.OG2_MAN.20211028_TSStrmRNA&quot;   
+##  [9] &quot;X211101_A01221_0077_ML215214_AD2156.808.5.CTL.D7.14.OG1_MAN.20211028_TSStrmRNA&quot;   
+## [10] &quot;X211101_A01221_0077_ML215215_AD2156.808.5.CTL.D7.14.OG2_MAN.20211028_TSStrmRNA&quot;   
+## [11] &quot;X211101_A01221_0077_ML215216_AD2044.G92C.D7.14_MAN.20211028_TSStrmRNA&quot;            
+## [12] &quot;X211101_A01221_0077_ML215217_AD2124.G92C.D7.14.OG2_MAN.20211028_TSStrmRNA&quot;        
+## [13] &quot;X211101_A01221_0077_ML215218_AD2126.G92C.D7.14.OG1_MAN.20211028_TSStrmRNA&quot;        
+## [14] &quot;X211101_A01221_0077_ML215219_AD2043.P118L.D7.14_MAN.20211028_TSStrmRNA&quot;           
+## [15] &quot;X211101_A01221_0077_ML215220_AD2048.P118L.D7.14_MAN.20211028_TSStrmRNA&quot;           
+## [16] &quot;X211101_A01221_0077_ML215221_AD2125.P118L.D7.14.OG1_MAN.20211028_TSStrmRNA&quot;       
+## [17] &quot;X211101_A01221_0077_ML215222_AD2050.R138Q.C83.D7.14_MAN.20211028_TSStrmRNA&quot;       
+## [18] &quot;X211101_A01221_0077_ML215223_AD2108.R138Q.C83.D7.14.OG1_MAN.20211028_TSStrmRNA&quot;   
+## [19] &quot;X211101_A01221_0077_ML215224_AD2110.R138Q.C83.D7.14.OG2_MAN.20211028_TSStrmRNA&quot;   
+## [20] &quot;X211101_A01221_0077_ML215225_AD2041.R168H.D7.14_MAN.20211028_TSStrmRNA&quot;           
+## [21] &quot;X211101_A01221_0077_ML215226_AD2145.R168H.D7.14.OG1_MAN.20211028_TSStrmRNA&quot;       
+## [22] &quot;X211101_A01221_0077_ML215227_AD2155.R168H.D7.14.OG1_MAN.20211028_TSStrmRNA&quot;       
+## [23] &quot;X211101_A01221_0077_ML215228_AD2052.R291W.D7.14.OG2_MAN.20211028_TSStrmRNA&quot;       
+## [24] &quot;X211101_A01221_0077_ML215229_AD2127.R291W.D7.14.OG1_MAN.20211028_TSStrmRNA&quot;       
+## [25] &quot;X211101_A01221_0077_ML215230_AD2131.R291W.D7.14.OG1_MAN.20211028_TSStrmRNA&quot;       
+## [26] &quot;X211101_A01221_0077_ML215231_AD2119.R168H.RG.Un.D7.14.OG1_MAN.20211028_TSStrmRNA&quot; 
+## [27] &quot;X211101_A01221_0077_ML215232_AD2122.R168H.RG.Un.D7.14.OG2_MAN.20211028_TSStrmRNA&quot; 
+## [28] &quot;X211101_A01221_0077_ML215233_AD2122.R168H.RG.Un.D7.14.OG1_MAN.20211028_TSStrmRNA&quot; 
+## [29] &quot;X211101_A01221_0077_ML215234_AD2118.R168H.RG.Pro.D7.14.OG2_MAN.20211028_TSStrmRNA&quot;
+## [30] &quot;X211101_A01221_0077_ML215235_AD2121.R168H.RG.Pro.D7.14.OG2_MAN.20211028_TSStrmRNA&quot;
+## [31] &quot;X211101_A01221_0077_ML215236_AD2121.R168H.RG.Pro.D7.14.OG1_MAN.20211028_TSStrmRNA&quot;
+## [32] &quot;X211101_A01221_0077_ML215237_NTC.2_MAN.20211028_TSStrmRNA&quot;</code></pre>
+<pre class="r"><code>print(colnames(genes_data))</code></pre>
+<pre><code>## [1] &quot;Gene.ID&quot;   &quot;Chrom&quot;     &quot;Gene.Name&quot; &quot;Biotype&quot;</code></pre>
+<p>The first four columns for the two tables are the same.</p>
+<p>I will compare the two and see if they are actually identical.</p>
+<pre class="r"><code>sorted_counts_data &lt;- counts_data[order(counts_data$Gene.ID, counts_data$Chrom), ]
+sorted_genes_data &lt;- genes_data[order(genes_data$Gene.ID, genes_data$Chrom), ]
+
+sorted_first_four_cols_of_counts_data &lt;- sorted_counts_data[, 1:4]
+names(sorted_first_four_cols_of_counts_data) &lt;- c(&quot;Gene.ID&quot;, &quot;Chrom&quot;, &quot;Gene.Name&quot;, &quot;Biotype&quot;)
+names(sorted_genes_data) &lt;- c(&quot;Gene.ID&quot;, &quot;Chrom&quot;, &quot;Gene.Name&quot;, &quot;Biotype&quot;)
+
+attr(sorted_first_four_cols_of_counts_data, &quot;row.names&quot;) &lt;- NULL
+attr(sorted_genes_data, &quot;row.names&quot;) &lt;- NULL
+
+all.equal(sorted_first_four_cols_of_counts_data, sorted_genes_data)</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<p>From the above, we conclude that genes.txt. is a subset of
+counts.txt. We will move on to only investigate counts.txt.</p>
+<div id="rename-the-column-name-for-easier-identification." class="section level4">
+<h4>Rename the column name for easier identification.</h4>
+<p>All the samples were processed on December 28, 2021. The method of
+processing sequence read is Transcription Start Site Trimmed RNA
+(TSStrimRNAs).</p>
+<pre class="r"><code>rm_prefix &lt;- &quot;X211101_A01221_0077_&quot;
+rm_suffix &lt;- &quot;\\.20211028_TSStrmRNA$&quot;
+
+new_col_names &lt;- sub(paste0(&quot;^&quot;, rm_prefix), &quot;&quot;, colnames(counts_data))
+
+new_col_names &lt;- sub(rm_suffix, &quot;&quot;, new_col_names)
+
+new_col_names </code></pre>
+<pre><code>##  [1] &quot;Gene.ID&quot;                                   
+##  [2] &quot;Chrom&quot;                                     
+##  [3] &quot;Gene.Name&quot;                                 
+##  [4] &quot;Biotype&quot;                                   
+##  [5] &quot;ML215210_AD2101.808.3.CTL.D7.14.OG1_MAN&quot;   
+##  [6] &quot;ML215211_AD2101.808.3.CTL.D7.14.OG2_MAN&quot;   
+##  [7] &quot;ML215212_AD2112.808.3.CTL.D7.14_MAN&quot;       
+##  [8] &quot;ML215213_AD2141.808.5.CTL.D7.14.OG2_MAN&quot;   
+##  [9] &quot;ML215214_AD2156.808.5.CTL.D7.14.OG1_MAN&quot;   
+## [10] &quot;ML215215_AD2156.808.5.CTL.D7.14.OG2_MAN&quot;   
+## [11] &quot;ML215216_AD2044.G92C.D7.14_MAN&quot;            
+## [12] &quot;ML215217_AD2124.G92C.D7.14.OG2_MAN&quot;        
+## [13] &quot;ML215218_AD2126.G92C.D7.14.OG1_MAN&quot;        
+## [14] &quot;ML215219_AD2043.P118L.D7.14_MAN&quot;           
+## [15] &quot;ML215220_AD2048.P118L.D7.14_MAN&quot;           
+## [16] &quot;ML215221_AD2125.P118L.D7.14.OG1_MAN&quot;       
+## [17] &quot;ML215222_AD2050.R138Q.C83.D7.14_MAN&quot;       
+## [18] &quot;ML215223_AD2108.R138Q.C83.D7.14.OG1_MAN&quot;   
+## [19] &quot;ML215224_AD2110.R138Q.C83.D7.14.OG2_MAN&quot;   
+## [20] &quot;ML215225_AD2041.R168H.D7.14_MAN&quot;           
+## [21] &quot;ML215226_AD2145.R168H.D7.14.OG1_MAN&quot;       
+## [22] &quot;ML215227_AD2155.R168H.D7.14.OG1_MAN&quot;       
+## [23] &quot;ML215228_AD2052.R291W.D7.14.OG2_MAN&quot;       
+## [24] &quot;ML215229_AD2127.R291W.D7.14.OG1_MAN&quot;       
+## [25] &quot;ML215230_AD2131.R291W.D7.14.OG1_MAN&quot;       
+## [26] &quot;ML215231_AD2119.R168H.RG.Un.D7.14.OG1_MAN&quot; 
+## [27] &quot;ML215232_AD2122.R168H.RG.Un.D7.14.OG2_MAN&quot; 
+## [28] &quot;ML215233_AD2122.R168H.RG.Un.D7.14.OG1_MAN&quot; 
+## [29] &quot;ML215234_AD2118.R168H.RG.Pro.D7.14.OG2_MAN&quot;
+## [30] &quot;ML215235_AD2121.R168H.RG.Pro.D7.14.OG2_MAN&quot;
+## [31] &quot;ML215236_AD2121.R168H.RG.Pro.D7.14.OG1_MAN&quot;
+## [32] &quot;ML215237_NTC.2_MAN&quot;</code></pre>
+<p>From the paper, Table 2 <span class="citation">[<strong>citation?</strong>]</span>, we see that five
+different point mutations, G92C, P118L, R138Q, R168H, and, R291W, were
+studied.</p>
+<p>The table shows PCR primers for amplification before sequencing and
+Sanger sequencing primers for each variant line generated.<br />
+F, forward; R, reverse.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left;">
+Sequence.Variant
+</th>
+<th style="text-align:left;">
+Protein.Change
+</th>
+<th style="text-align:left;">
+PCR.Primers
+</th>
+<th style="text-align:left;">
+Sequencing.Primers
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+c.274G&gt;T
+</td>
+<td style="text-align:left;">
+p.G92C
+</td>
+<td style="text-align:left;">
+F-CCACGGTGGTGGACGTGGATG
+</td>
+<td style="text-align:left;">
+R-CCTTTGCCAAGTTGCTTCGTC CCAACCTGTACCACACTCG
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+c.353C&gt;T
+</td>
+<td style="text-align:left;">
+p.P118L
+</td>
+<td style="text-align:left;">
+F-CCTGTGAACTCTGACTACTC
+</td>
+<td style="text-align:left;">
+R-CTTCCTGTTCACATTTGAG CTTCCTGTTCACATTTGAG
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+c.413G&gt;A
+</td>
+<td style="text-align:left;">
+p.R138Q
+</td>
+<td style="text-align:left;">
+F-TTTGAAGCAGCCTCAGAAG
+</td>
+<td style="text-align:left;">
+R-GCATGGGTTGAAGAAATTGG AAGCTAGTGCAGAACTCAC
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+c.503G&gt;A
+</td>
+<td style="text-align:left;">
+p.R168H
+</td>
+<td style="text-align:left;">
+F-GCTATTCTGATTACTTCTGG
+</td>
+<td style="text-align:left;">
+R-GTACCTTCACAGTAACATCC AACGAATATGACATGGAGG
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+c.871C&gt;T
+</td>
+<td style="text-align:left;">
+p.R291W
+</td>
+<td style="text-align:left;">
+F-CTTATTTGGTCAGTTGTACCC
+</td>
+<td style="text-align:left;">
+R-CTGCCTCCCTTCATTCTTCAC AACTGAGCACAGCTCATCA
+</td>
+</tr>
+</tbody>
+</table>
+<p>The 8 cell lines are:<br />
+iPSC lines generated in lab: GE_Control, GE_R168H, GE_G92C, GE_P118L,
+GE_R138Q, GE_R291W<br />
+iPSC generated from blood cell of patient with SRNS: PD_Control,
+PD_R168H</p>
+<p>GE, gene-edited lines; PD, patient-derived lines.</p>
+<p>Note that R138Q mutation is most commonly seen in infantile and
+childhood SRNS. All the other cell lines contains mutation that were
+reported as disease inducing.</p>
+</div>
+</div>
+<div id="data-cleaning" class="section level2">
+<h2>Data cleaning</h2>
+<div id="remove-gene-with-no-expression-at-all-in-all-conditions" class="section level3">
+<h3>Remove gene with no expression at all in all conditions</h3>
+<pre class="r"><code>selected_columns &lt;- counts_data[, 5:ncol(counts_data)]
+row_sums &lt;- apply(selected_columns, 1, sum)
+rows_to_keep &lt;- row_sums &gt; 1
+filtered_counts_data &lt;- counts_data[rows_to_keep,]</code></pre>
+<p>The number of genes remained after removing the genes without
+expression is 40354.</p>
+</div>
+<div id="investigate-gene-dupication-in-the-file" class="section level3">
+<h3>Investigate gene dupication in the file</h3>
 <pre class="r"><code># print duplicate count by Gene.ID
-duplicates_count &lt;- counts_data %&gt;% 
+duplicates_count &lt;- filtered_counts_data%&gt;% 
   group_by(Gene.ID) %&gt;% 
   mutate(duplicate_count = n()) %&gt;% 
   filter(duplicate_count &gt; 1)
@@ -685,51 +682,84 @@ duplicates_count &lt;- counts_data %&gt;%
 print(nrow(duplicates_count))</code></pre>
 <pre><code>## [1] 0</code></pre>
 <pre class="r"><code># print duplicate count by Gene.Name
-duplicates_count &lt;- genes_data %&gt;% 
+duplicates_count &lt;- filtered_counts_data %&gt;% 
   group_by(Gene.Name, Chrom) %&gt;% 
   mutate(duplicate_count = n()) %&gt;% 
   filter(duplicate_count &gt; 1) %&gt;% 
-  summarize(duplicate_count = n_distinct(Gene.ID))</code></pre>
+  summarize(duplicate_count = n_distinct(Gene.ID))%&gt;%
+  arrange(desc(duplicate_count))</code></pre>
 <pre><code>## `summarise()` has grouped output by &#39;Gene.Name&#39;. You can override using the
 ## `.groups` argument.</code></pre>
 <pre class="r"><code>duplicates_count</code></pre>
-<pre><code>## # A tibble: 136 × 3
-## # Groups:   Gene.Name [61]
-##    Gene.Name      Chrom duplicate_count
-##    &lt;chr&gt;          &lt;chr&gt;           &lt;int&gt;
-##  1 5S_rRNA        2                   2
-##  2 5_8S_rRNA      20                  3
-##  3 7SK            1                   3
-##  4 ALG1L9P        11                  2
-##  5 ANAPC1P2       2                   2
-##  6 ARMCX5-GPRASP2 X                   2
-##  7 BMS1P4         10                  2
-##  8 C2orf27A       2                   2
-##  9 CCDC39         3                   2
-## 10 CLCA4-AS1      1                   2
-## # ℹ 126 more rows</code></pre>
-<p>The number of duplicated genes:</p>
-<pre class="r"><code>print(nrow(duplicates_count))</code></pre>
-<pre><code>## [1] 136</code></pre>
-<pre class="r"><code>head(duplicates_count)</code></pre>
-<pre><code>## # A tibble: 6 × 3
-## # Groups:   Gene.Name [6]
-##   Gene.Name      Chrom duplicate_count
-##   &lt;chr&gt;          &lt;chr&gt;           &lt;int&gt;
-## 1 5S_rRNA        2                   2
-## 2 5_8S_rRNA      20                  3
-## 3 7SK            1                   3
-## 4 ALG1L9P        11                  2
-## 5 ANAPC1P2       2                   2
-## 6 ARMCX5-GPRASP2 X                   2</code></pre>
-<p>As the file genes contain the same first four column as the counts
-file, we will proceed with the counts file only.</p>
+<pre><code>## # A tibble: 70 x 3
+## # Groups:   Gene.Name [31]
+##    Gene.Name Chrom duplicate_count
+##    &lt;chr&gt;     &lt;chr&gt;           &lt;int&gt;
+##  1 Y_RNA     1                  18
+##  2 Y_RNA     10                 14
+##  3 Y_RNA     11                 13
+##  4 Y_RNA     12                 13
+##  5 Y_RNA     17                 13
+##  6 Y_RNA     3                  12
+##  7 Y_RNA     5                  11
+##  8 Y_RNA     9                  11
+##  9 Y_RNA     14                 10
+## 10 Y_RNA     2                  10
+## # ... with 60 more rows</code></pre>
+<pre class="r"><code>length(unique(duplicates_count$Gene.Name))</code></pre>
+<pre><code>## [1] 31</code></pre>
+<p>From the above we see that there is no gene with the same Ensembl ID.
+Each of them are unique. However, there are 31 genes duplicates when
+grouped by gene symbol. Upon further investigation, some of the gene are
+located at a different chromosome, hence, the number of duplication of
+gene paired chromosome location is calculated. The number is 70.</p>
+<p>At this stage, since each gene has an unique Ensembl ID, we will not
+discard any gene from the gene pool.</p>
 </div>
-<div id="data-cleaning-and-hugo-mapping" class="section level2">
-<h2>Data cleaning and HUGO mapping</h2>
+</div>
+<div id="hugo-mapping" class="section level2">
+<h2>HUGO mapping</h2>
+<p>The data contains Ensembl gene ID and HUGO gene symbol. The following
+code does HUGO gene mapping of the dataset nevertheless.</p>
 </div>
 <div id="data-normalization" class="section level2">
 <h2>Data Normalization</h2>
+</div>
+<div id="questions-and-answers" class="section level2">
+<h2>Questions and answers</h2>
+<div id="why-is-the-dataset-of-interest-to-you" class="section level4">
+<h4>Why is the dataset of interest to you?</h4>
+</div>
+<div id="what-are-the-control-and-test-conditions-of-the-dataset" class="section level4">
+<h4>What are the control and test conditions of the dataset?</h4>
+</div>
+<div id="how-many-samples-in-each-of-the-conditions-of-your-dataset" class="section level4">
+<h4>How many samples in each of the conditions of your dataset?</h4>
+<ul>
+<li>The control condition (One sample): iPSC blood sample, unaffected
+relative</li>
+<li>The Diseased condition (Two samples): iPSC allelic control
+fibroblast cell line, homozygous with R168H mutation cells from patient
+blood</li>
+</ul>
+</div>
+<div id="were-there-expression-values-that-were-not-unique-for-specific-genes-how-did-you-handle-these" class="section level4">
+<h4>Were there expression values that were not unique for specific
+genes? How did you handle these?</h4>
+</div>
+<div id="were-there-expression-values-that-could-not-be-mapped-to-current-hugo-symbols" class="section level4">
+<h4>Were there expression values that could not be mapped to current
+HUGO symbols?</h4>
+<p>All the genes are mapped the HUGO symbols. However, there are some
+gene duplicates with the same HUGO symbols but different Ensembl ID.
+#### Were there any outliers in your dataset? How were they handled in
+the originating paper? How many outliers were removed? • How did you
+handle replicates? • What is the final coverage of your dataset?</p>
+<ol start="2" style="list-style-type: decimal">
+<li><a href="#q2">What are the control and test conditions of the
+dataset?</a></li>
+</ol>
+</div>
 </div>
 <div id="citations-if-any" class="section level2">
 <h2>Citations (if any)</h2>
