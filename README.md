@@ -4,7 +4,10 @@ repo for bcb420 for Anna Lai
 Link to Wiki Page: https://github.com/bcb420-2024/Anna_Lai/wiki
 
 
-# Assignments 
-- Link to A1 HTML Notebook
-- Link to A2 HTML Notebook
-- Link to A3 HTML Notebook
+# Assignments
+
+| Journal         | Link to Repo                                                                                           |
+|-----------------|--------------------------------------------------------------------------------------------------------|
+| [Homework 1](https://github.com/bcb420-2024/Anna_Lai/wiki/Assignment-%231-%E2%80%90-Data-set-selection-and-initial-Processing)       | [RNotebk](https://html-preview.github.io/?url=https://github.com/bcb420-2024/Anna_Lai/blob/main/A1_AnnaLai.html) |
+| [Homework 2](https://github.com/bcb420-2024/Anna_Lai/wiki/Assignment-%232-%E2%80%90-Differential-Gene-expression-and-Preliminary-ORA)      | Link |
+| Homework 3     | Link |
