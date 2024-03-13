@@ -288,12 +288,12 @@ exp_groups
 ```{r TMM}
 d = DGEList(counts=as.matrix(subset_data), group=exp_groups$sample_groups)
 d = calcNormFactors(d)
-normalizedCounts <- cpm(d)
+normalized_count_data <- cpm(d)
 ```
 
 Box plot with reference with lecture 5 normalization codes after normalization. The median aligned together except for the last condition NTC. Normalization successfully applied to the data.
 ```{r boxplot_after_norm}
-x_log <- log2(normalizedCounts)
+x_log <- log2(normalized_count_data)
 x_log[which(x_log == -Inf)] <- 0
 
 boxplot(x_log, xlab = "Samples", ylab = "log2 TPM",
@@ -306,7 +306,7 @@ col = "red", lwd = 0.6, lty = "dashed")
 
 Density plot with reference to lecture 5 normalization codes.
 ```{r density_after, fig.height = 12, fig.width = 22}
-counts_density <- apply(log2(normalizedCounts), 2, density)
+counts_density <- apply(log2(normalized_count_data), 2, density)
 
 xlim <- 0; ylim <- 0
 for (i in 1:length(counts_density)) {
@@ -318,7 +318,7 @@ ltys <- rep(1, length(counts_density))
 
 
 plot(counts_density[[1]], xlim=xlim, ylim=ylim, type="n",
-ylab="Smoothing density of log2-CPM Before normalization",
+ylab="Smoothing density of log2-CPM After normalization",
 main="", cex.lab = 0.85)
 
 for (i in 1:length(counts_density))
@@ -335,50 +335,73 @@ The data looks more centered after normalization.
 
 ### MDS plot
 I have not included this plot in the previous assignment.Plotted with reference to lecture 5. 
-```{r MDS_condition fig.height = 15, fig.width = 15}
+```{r MDS_condition, fig.height = 8, fig.width = 8}
 colors_plot<- sample(colors()[1:657], 10)
 
-limma::plotMDS(d, labels=NULL,pch=1, cex=0.8,
+limma::plotMDS(normalized_count_data, labels=NULL,pch=1, cex=0.8,
 col = colors_plot[factor(exp_groups$sample_group)], main = "Multidimensional Scaling (MDS) after normalization group by mutation condition")
 
 legend("top",
 legend=levels(factor(exp_groups$sample_group)),
 pch=c(1), col=
 colors_plot,title="Class",
-bty = 'n', cex = 0.5)
+bty = 'n', cex = 0.75)
 ```
 The data is separted into NTC and non NTC according to the MDS graph. 
 
-```{r MDS_bio_rep fig.height = 15, fig.width = 15}
-colors_plot<- sample(colors()[1:657], 3)
-
-limma::plotMDS(d, labels=NULL,pch=1, cex=0.8,
+```{r MDS_bio_rep, fig.height = 8, fig.width = 8}
+colors_plot<- c("red3", "green2", "blue2")
+limma::plotMDS(normalized_count_data, labels=NULL,pch=1, cex=0.8,
 col = colors_plot[factor(exp_groups$replication)], main = "Multidimensional Scaling (MDS) after normalization group by bio-replicate num")
 
 legend("top",
 legend=levels(factor(exp_groups$replication)),
 pch=c(1), col=
 colors_plot,title="Class",
-bty = 'n', cex = 0.5)
+bty = 'n', cex = 0.75)
 ```
 No significant difference showned. The 1 at the left hand side is of type NTc. 
 
-```{r MDS_cell_line fig.height = 15, fig.width = 15}
-colors_plot<- sample(colors()[1:657], 3)
+```{r MDS_cell_line, fig.height = 8, fig.width = 8}
+colors_plot<- c("red3", "blue2")
 
-limma::plotMDS(d, labels=NULL,pch=1, cex=0.8,
+limma::plotMDS(normalized_count_data, labels=NULL,pch=1, cex=1,
 col = colors_plot[factor(exp_groups$cell_line)], main = "Multidimensional Scaling (MDS) after normalization group by Cell Line")
 
 legend("top",
 legend=levels(factor(exp_groups$cell_line)),
 pch=c(1), col=
 colors_plot,title="Class",
-bty = 'n', cex = 0.5)
+bty = 'n', cex = 0.75)
 ```
 Seems like the sample from human donor has higher expression in general than iPSC cell line. Interesting observation.
 
 ## Differetnail Gene Expression
+```{r p_value}
+model_design <- model.matrix(~exp_groups$sample_group)
 
+expressionMatrix <- as.matrix(normalized_count_data)
+rownames(expressionMatrix) < rownames(counts_data)
+colnames(expressionMatrix) <- colnames(normalized_count_data)
+minimalSet <- ExpressionSet(assayData=expressionMatrix)
+
+fit <- lmFit(minimalSet, model_design)
+fit2 <- eBayes(fit,trend=TRUE)
+
+topfit <- topTable(fit2,
+coef=ncol(model_design),
+adjust.method = "BH",
+number = nrow(expressionMatrix))
+
+output_hits <- merge(counts_data$Gene.Name, topfit, by.y=0, by.x=1, all.y=TRUE)
+output_hits <- output_hits[order(output_hits$P.Value),]
+
+kable(output_hits,type="html",row.names = FALSE)
+```
+```{r p_value_pass}
+length(which(output_hits$P.Value < 0.05)) # passed p-value<0.05 threshold
+length(which(output_hits$adj.P.Val < 0.05)) # passed adjacent f-value < 0.05 threshold
+```
 
 ### MA or Volcano Plot
 
