@@ -30,7 +30,7 @@ for (package in packages_to_install) {
   }
 }
 
-packages_to_install <- c("crsh/citr")
+packages_to_install <- c("crsh/citr") #Use Zotero for citation
 for (package in packages_to_install) {
   if (!requireNamespace(package, quietly = TRUE)) {
     devtools::install_github(package)
@@ -268,17 +268,21 @@ It seems like my data does not follow a normal distribution, rather, an anti-sym
 ### Apply Trimmed Mean of M-values to counts_data based on Samples
 With reference to lecture 5.
 
-Data grouping according to sample. 
+Data grouping according to sample. Added cell line from Assignment 1 for investigation.
 ```{r grouping}
 sample_groups <- unlist(lapply(c(rep("808.3", 3), rep("808.5", 3), rep("G92C", 3), rep("P118L", 3), rep("R138Q", 3), rep("R168H.D7.14", 3), rep("R291W", 3), rep("R168H.RG.Un", 3), rep("R168H.RG.Pro", 3)), identity))
 sample_groups <- append(sample_groups, "NTC")
 
 rep <- rep(c(1, 2, 3), times = 9) 
 rep <- append(rep, 1)
-exp_groups <- cbind(colnames(subset_data), sample_groups, rep)
 
-exp_groups <- data.frame(sample_group = sample_groups, replication = rep)
-print(exp_groups)
+cell_line <- unlist(lapply(c(rep("iPSC", 21), rep("Human Sample", 6)), identity))
+cell_line <- append(cell_line, "iPSC")
+
+exp_groups <- cbind(colnames(subset_data), sample_groups, rep, cell_line)
+
+exp_groups <- data.frame(sample_group = sample_groups, replication = rep, cell_line=cell_line)
+exp_groups
 ```
 
 ```{r TMM}
@@ -327,13 +331,54 @@ merge = TRUE, bg = "gray90")
 ```
 The data looks more centered after normalization. 
 
+# Continued Data Exloration Journey
 
-### Data Normalization results
+### MDS plot
+I have not included this plot in the previous assignment.Plotted with reference to lecture 5. 
+```{r MDS_condition fig.height = 15, fig.width = 15}
+colors_plot<- sample(colors()[1:657], 10)
+
+limma::plotMDS(d, labels=NULL,pch=1, cex=0.8,
+col = colors_plot[factor(exp_groups$sample_group)], main = "Multidimensional Scaling (MDS) after normalization group by mutation condition")
+
+legend("top",
+legend=levels(factor(exp_groups$sample_group)),
+pch=c(1), col=
+colors_plot,title="Class",
+bty = 'n', cex = 0.5)
+```
+The data is separted into NTC and non NTC according to the MDS graph. 
+
+```{r MDS_bio_rep fig.height = 15, fig.width = 15}
+colors_plot<- sample(colors()[1:657], 3)
+
+limma::plotMDS(d, labels=NULL,pch=1, cex=0.8,
+col = colors_plot[factor(exp_groups$replication)], main = "Multidimensional Scaling (MDS) after normalization group by bio-replicate num")
+
+legend("top",
+legend=levels(factor(exp_groups$replication)),
+pch=c(1), col=
+colors_plot,title="Class",
+bty = 'n', cex = 0.5)
+```
+No significant difference showned. The 1 at the left hand side is of type NTc. 
+
+```{r MDS_cell_line fig.height = 15, fig.width = 15}
+colors_plot<- sample(colors()[1:657], 3)
+
+limma::plotMDS(d, labels=NULL,pch=1, cex=0.8,
+col = colors_plot[factor(exp_groups$cell_line)], main = "Multidimensional Scaling (MDS) after normalization group by Cell Line")
+
+legend("top",
+legend=levels(factor(exp_groups$cell_line)),
+pch=c(1), col=
+colors_plot,title="Class",
+bty = 'n', cex = 0.5)
+```
+Seems like the sample from human donor has higher expression in general than iPSC cell line. Interesting observation.
 
 ## Differetnail Gene Expression
 
-### MDS plot
-I have not included this plot in the previous assignment.
 
 ### MA or Volcano Plot
 
