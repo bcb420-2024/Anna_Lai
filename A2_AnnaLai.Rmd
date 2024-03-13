@@ -1,8 +1,8 @@
 ---
-title: "Assignment 1"
-subtitle: "Data set selection and initial Processing"
+title: "Assignment 2 BCB 420"
+subtitle: "Differential Gene Analysis for of NPHS2 Point Variants"
 author: "Anna T. Lai"
-date: "`February 13, 2024`"
+date: "`March 13, 2024`"
 output:
   html_document:
     toc: true
@@ -12,10 +12,10 @@ csl: biomed-central.csl
 nocite: '@*'
 ---
 
-## Setup
+# Setup
 
 ```{r setup, message=FALSE, warning=FALSE, results='hide'}
-packages_to_install <- c("BiocManager", "RSQLite", "readr", "gplots", "reshape2", "RColorBrewer", "grid", "BiocManager", "knitr", "kableExtra")
+packages_to_install <- c("BiocManager", "RSQLite", "readr", "gplots", "reshape2", "RColorBrewer", "grid", "BiocManager", "knitr", "kableExtra", "devtools")
 for (package in packages_to_install) {
   if (!requireNamespace(package, quietly = TRUE)) {
     install.packages(package)
@@ -23,10 +23,17 @@ for (package in packages_to_install) {
   library(package, character.only = TRUE)
 }
 
-packages_to_install <- c("edgeR", "biomaRt")
+packages_to_install <- c("edgeR", "biomaRt", "GEOquery")
 for (package in packages_to_install) {
   if (!requireNamespace(package, quietly = TRUE)) {
     BiocManager::install(package)
+  }
+}
+
+packages_to_install <- c("crsh/citr")
+for (package in packages_to_install) {
+  if (!requireNamespace(package, quietly = TRUE)) {
+    devtools::install_github(package)
   }
 }
 
@@ -45,44 +52,51 @@ library(edgeR)
 library(biomaRt)
 library(knitr)
 library(kableExtra)
+library(GEOquery)
+library(devtools)
 ```
 
+# Information from previous assignment
 
-## Data Selection
+About the data (with reference to lecture 4)
+```{r get_data, warning=FALSE, message=FALSE}
+data_geoid <- "GSE205647"
+gse <- getGEO(data_geoid ,GSEMatrix=FALSE)
+gse@header$overall_design
+```
 
-Please refer to the GitHub Wiki Journal [Data Selection](https://github.com/bcb420-2024/Anna_Lai/wiki/Data-Selection). 
+Un-comment to download the files to local PC. The files are already included in the GitHub repo, just in case.There are two files in this dataset and we use the counts data.
+```{r files, warning=FALSE, message=FALSE}
+sfilenames = getGEOSuppFiles(data_geoid,
+fetch_files = FALSE)
+sfilenames
 
-The Data can be found here: [	Transcriptional profiling of organoid glomeruli isolated from human kidney organoids modelling congenital nephrotic syndrome](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE205647). There are two files, the gene names and the gene counts.
+# Extract zipped files in the format of gz
+# extract_gz <- function(file_path) {
+#   message("Extracting:", basename(file_path))
+#   extracted_file_name <- gsub(".gz", "", file_path)
+#   
+#   if (!file.exists(extracted_file_name)){
+#     gunzip(file_path)
+#   }
+# }
+# 
 
-## About the Data and the experimentment
-The paper studied a neuphoric genetic disorder, Steroid-resistant nephrotic syndrome (SRNS). NPHS2 encodes a gene that was found to be mutated at a high rate in SRNS, specifically caused by the missense mutation in human DNA. Researchers studied point mutation in induced pluripotent stem cell (iPSC) of NPHS2.
-
-+ Location: Australia  
-+ Institution: MRRI, Royal Children's Hospital  
-+ Paper submission date: June 07, 2022  
-+ Techonoloy used: TSStrimRNAs, high-throughput RNA sequencing  
-+ Platform used: Illumina NovaSeq 6000  
-+ Number of samples: 27  
-+ Number of cell lines: 8
+# for (filename in sfilenames$fname) {
+#   file_path <- file.path(getwd(), filename)
+#   if (file.exists(file_path) && file.info(file_path)$size > 0) {
+#     extract_gz(file_path)
+#   }
+# }
+```
 
 ```{r read_file, warning=FALSE}
 files <- c("GSE205647_counts.txt", "GSE205647_genes.txt")
 
 counts_data <- read.table(files[1], header = TRUE)
-# View(counts_data) # un-comment to see the entire table
 genes_data <- read.table(files[2], header = TRUE)
-# View(genes_data) # un-comment to see the entire table
-
-print(nrow(counts_data))
-print(nrow(genes_data))
-
-print(colnames(counts_data))
-print(colnames(genes_data))
 ```
 
-The first four columns for the two tables are the same.
-
-I will compare the two and see if they are actually identical.
 
 ```{r identical_files}
 sorted_counts_data <- counts_data[order(counts_data$Gene.ID, counts_data$Chrom), ]
@@ -110,31 +124,6 @@ new_col_names <- sub(paste0("^", rm_prefix), "", colnames(counts_data))
 new_col_names <- sub(rm_suffix, "", new_col_names)
 colnames(counts_data) <- new_col_names 
 ```
-From Table 2 of the paper, we see that five different point mutations, G92C, P118L, R138Q, R168H, and, R291W, were studied.
-
-The table shows PCR primers for amplification before sequencing and Sanger sequencing primers for each variant line generated.  
-F, forward; R, reverse.  
-
-
-```{r mutation_table, message=FALSE, echo = FALSE}
-# From the paper, explanation on the mutation numbers
-variant_data <- data.frame(
-  "Sequence Variant" = c("c.274G>T", "c.353C>T", "c.413G>A", "c.503G>A", "c.871C>T"),
-  "Protein Change" = c("p.G92C", "p.P118L", "p.R138Q", "p.R168H", "p.R291W"),
-  "PCR Primers" = c("F-CCACGGTGGTGGACGTGGATG", "F-CCTGTGAACTCTGACTACTC", "F-TTTGAAGCAGCCTCAGAAG", "F-GCTATTCTGATTACTTCTGG", "F-CTTATTTGGTCAGTTGTACCC"),
-  "Sequencing Primers" = c("R-CCTTTGCCAAGTTGCTTCGTC CCAACCTGTACCACACTCG", "R-CTTCCTGTTCACATTTGAG CTTCCTGTTCACATTTGAG", "R-GCATGGGTTGAAGAAATTGG AAGCTAGTGCAGAACTCAC", "R-GTACCTTCACAGTAACATCC AACGAATATGACATGGAGG", "R-CTGCCTCCCTTCATTCTTCAC AACTGAGCACAGCTCATCA")
-)
-
-knitr::kable(variant_data, format = "html")
-```
-
-The 8 cell lines are:  
-iPSC lines generated in lab: GE_Control, GE_R168H, GE_G92C, GE_P118L, GE_R138Q, GE_R291W  
-iPSC generated from blood cell of patient with SRNS: PD_Control, PD_R168H  
-
-GE, gene-edited lines; PD, patient-derived lines.  
-
-Note that R138Q mutation is most commonly seen in infantile and childhood SRNS. All the other cell lines contains mutation that were reported as disease inducing. 
 
 ## Data cleaning
 
@@ -194,6 +183,7 @@ At this stage, since each gene has an unique Ensembl ID, we will not discard any
 
 ### Visualizations 
 Most of the genes in the list are protein encoding.
+
 ```{r biotype}
 biotype_tabulation <- table(counts_data$Biotype)
 biotype_df <- data.frame(Biotype = names(biotype_tabulation), Count = as.vector(biotype_tabulation))
@@ -223,6 +213,7 @@ x_log[which(x_log == -Inf)] <- 0
 
 hm <- heatmap(x_log, Rowv = NA, Colv = NA, margins = c(5, 10), col = colorRampPalette(rev(brewer.pal(9, "YlOrBr")))(256), scale = "none", dendrogram = "none", xlab = "", ylab = "", main = "Visualized Log2 Gene Count per Experimental Condition After Filtering Data", labRow = rn, labCol = cn)
 ```
+
 Expression of the genes for the last condition is low in general. Since we removed the genes with low count, all the rows look pretty active. Condition 8, 12, 21 seems to have lower expression level then all other conditions. 
 
 ```{r condition}
@@ -231,7 +222,9 @@ colnames(counts_data)[12]
 colnames(counts_data)[21]
 colnames(counts_data)[31]
 ```
+
 Box plot with reference with lecture 5 normalization codes after data filtering.
+
 ```{r boxplot}
 boxplot(x_log, xlab = "Samples", ylab = "log2 TPM",
 las = 2, cex = 0.5, cex.lab = 0.5,
@@ -242,6 +235,7 @@ col = "red", lwd = 0.6, lty = "dashed")
 ```
 
 Density plot with reference to lecture 5 normalization codes. Before normalization. 
+
 ```{r density_before, fig.height = 12, fig.width = 22}
 counts_density <- apply(log2(subset_data), 2, density)
 
@@ -266,10 +260,8 @@ col=cols, lty=ltys, cex=0.75,
 border ="blue", text.col = "green4",
 merge = TRUE, bg = "gray90")
 ```
-It seems like my data does not follow a normal distribution, rather, an anti-symmetry distribution is observed.There is a sample that lies completely to the left side. Perhaps it is the NTC sample. 
 
-## HUGO mapping
-The data contains Ensembl gene ID and HUGO gene symbol. Attempt to make HUGO apping was made but connection to ensembl was not sucessful. Noted in the Journal for this assignment. 
+It seems like my data does not follow a normal distribution, rather, an anti-symmetry distribution is observed.There is a sample that lies completely to the left side. Perhaps it is the NTC sample. 
 
 ## Data Normalization
 
@@ -335,31 +327,32 @@ merge = TRUE, bg = "gray90")
 ```
 The data looks more centered after normalization. 
 
-## Questions and answers
 
-#### Why is the dataset of interest to you?
-- I am interested in point mutation studies in cancer genetics.
+### Data Normalization results
 
-#### What are the control and test conditions of the dataset?
-#### How many samples in each of the conditions of your dataset?
-There are 9 conditions, 3 replicates per condition.
+## Differetnail Gene Expression
 
-- The control condition (One sample): iPSC blood sample, unaffected relative
+### MDS plot
+I have not included this plot in the previous assignment.
 
-- The Diseased condition (Two samples): iPSC allelic control fibroblast cell line, homozygous with R168H mutation cells from patient blood 
+### MA or Volcano Plot
 
-#### Were there expression values that were not unique for specific genes? How did you handle these?
-#### Were there expression values that could not be mapped to current HUGO symbols?
-- All the genes are mapped the HUGO symbols. However, there are some gene duplicates with the same HUGO symbols but different Ensembl ID. 
+### Top hit genes Heatmap
 
-#### Were there any outliers in your dataset? How were they handled in the originating paper? #### How many outliers were removed? 
-- After normalization, I kept the outliers that had significantly higher expression in each experimental conditions as they might be relevant to the research question.
+## Thresholded over-representation analysis
 
-###	[How did you handle replicates?](#rep)
+### Method chosen
+### Up-regualted versus down regulated gene sets
 
-###	[What is the final coverage of your dataset?](#coverage)
+
+## Intrepretation - Questions and answers
+
+#### 1.	Do the over-representation results support conclusions or mechanism discussed in the original paper?
+#### 2.	Can you find evidence, i.e. publications, to support some of the results that you see. How does this evidence support your results.
 
 
 ## Citations (if any)
-Lecture 5 of the lecture BCB420 by Professpr Ruth Isserlin.
-https://bioconductor.org/packages/release/bioc/html/GEOmetadb.html
+
+Lecture 4 BCB420 by Professor Ruth Isserlin. 
+
+https://bioconductor.org/packages/release/bioc/html/GEOquery.html
