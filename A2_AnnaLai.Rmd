@@ -377,11 +377,11 @@ bty = 'n', cex = 0.75)
 Seems like the sample from human donor has higher expression in general than iPSC cell line. Interesting observation.
 
 ## Differetnail Gene Expression
-```{r p_value}
+```{r p_value, results='hide'}
 model_design <- model.matrix(~exp_groups$sample_group)
 
 expressionMatrix <- as.matrix(normalized_count_data)
-rownames(expressionMatrix) < rownames(counts_data)
+rownames(expressionMatrix) < counts_data$Gene.ID
 colnames(expressionMatrix) <- colnames(normalized_count_data)
 minimalSet <- ExpressionSet(assayData=expressionMatrix)
 
@@ -393,25 +393,95 @@ coef=ncol(model_design),
 adjust.method = "BH",
 number = nrow(expressionMatrix))
 
-output_hits <- merge(counts_data$Gene.Name, topfit, by.y=0, by.x=1, all.y=TRUE)
+
+output_hits <- merge(data.frame(counts_data$Gene.ID, counts_data$Gene.Name), topfit, by.y=0, by.x=1, all.y=TRUE)
 output_hits <- output_hits[order(output_hits$P.Value),]
 
-kable(output_hits,type="html",row.names = FALSE)
 ```
+
+```{r table}
+kable(head(output_hits),type="html",row.names = FALSE)
+```
+
+
 ```{r p_value_pass}
 length(which(output_hits$P.Value < 0.05)) # passed p-value<0.05 threshold
 length(which(output_hits$adj.P.Val < 0.05)) # passed adjacent f-value < 0.05 threshold
 ```
+Model 2 with cell line as variable that is taken into consideration
+```{r model2}
+model_design_pat2 <- model.matrix(~exp_groups$cell_line)
+fit_pat <- lmFit(minimalSet, model_design_pat2)
+fit_pat2 <- eBayes(fit_pat,trend=TRUE)
+
+topfit <- topTable(fit_pat2,
+coef=ncol(model_design_pat2),
+adjust.method = "BH",
+number = nrow(expressionMatrix))
+
+
+output_hits2 <- merge(data.frame(counts_data$Gene.ID, counts_data$Gene.Name), topfit, by.y=0, by.x=1, all.y=TRUE)
+output_hits2 <- output_hits2[order(output_hits2$P.Value),]
+```
+
+```{r table2}
+kable(head(output_hits2),type="html",row.names = FALSE)
+```
+
+
+```{r p_value_pass2}
+length(which(output_hits2$P.Value < 0.05)) # passed p-value<0.05 threshold
+length(which(output_hits2$adj.P.Val < 0.05)) # passed adjacent f-value < 0.05 threshold
+```
+A lot more genes pass the threshold using this model. However, the context of using condition to group makes more sense for our purposes. 
+
+```{r compare_model1_2}
+model1_pvalues <- data.frame(
+  ensembl_id =output_hits$counts_data.Gene.ID,
+simple_pvalue=output_hits$P.Value)
+
+model2_pvalues <- data.frame(
+  ensembl_id =output_hits2$counts_data.Gene.ID,
+patient_pvalue = output_hits2$P.Value)
+
+two_models_pvalues <- merge(model1_pvalues,
+model2_pvalues,by.x=1,by.y=1)
+two_models_pvalues$colour <- "black"
+two_models_pvalues$colour[
+two_models_pvalues$simple_pvalue<0.05] <- "orange"
+two_models_pvalues$colour[
+two_models_pvalues$patient_pvalue<0.05] <- "blue"
+two_models_pvalues$colour[
+two_models_pvalues$simple_pvalue<0.05 &
+two_models_pvalues$patient_pvalue<0.05] <- "red"
+
+plot(two_models_pvalues$simple_pvalue,
+two_models_pvalues$patient_pvalue,
+col = two_models_pvalues$colour,
+xlab = "condition model p-values",
+ylab ="cell line model p-values",
+main="Condition vs cell line Limma p-value Method")
+```
+```{r}
+p.adjust.methods
+```
+
 
 ### MA or Volcano Plot
 
 ### Top hit genes Heatmap
 
-## Thresholded over-representation analysis
+## Thresholded over-representation analysis (ORA)
 
 ### Method chosen
 ### Up-regualted versus down regulated gene sets
-
+```{r up_down_regualtion}
+# length(which(qlf_output_hits$table$PValue < 0.05
+# & qlf_output_hits$table$logFC > 0))
+# 
+# length(which(qlf_output_hits$table$PValue < 0.05
+# & qlf_output_hits$table$logFC < 0))
+```
 
 ## Intrepretation - Questions and answers
 
