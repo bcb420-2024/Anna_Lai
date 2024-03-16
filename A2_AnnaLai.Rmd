@@ -517,7 +517,7 @@ kable(head(qlf_output_hits), caption="Quasi Liklihood method results group by ce
 ```
 Genes are significantly more deferentially expressed under different cell line. The sample might not be a good representation of the target study group, or it could be the other way round, the iPSC cell line is not a good presentation of the target study group. 
 
-```{r genes_threshold_quasi}
+```{r genes_threshold_quasi2}
 length(which(qlf_output_hits2$table$PValue < 0.05)) # pvalue threshold
 length(which(qlf_output_hits2$table$FDR < 0.05)) # correlation
 ```
