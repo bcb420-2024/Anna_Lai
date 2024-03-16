@@ -15,7 +15,7 @@ nocite: '@*'
 # Setup
 
 ```{r setup, message=FALSE, warning=FALSE, results='hide'}
-packages_to_install <- c("BiocManager", "RSQLite", "readr", "gplots", "reshape2", "RColorBrewer", "grid", "BiocManager", "knitr", "kableExtra", "devtools")
+packages_to_install <- c("BiocManager", "RSQLite", "readr", "gplots", "reshape2", "RColorBrewer", "grid", "BiocManager", "knitr", "kableExtra", "devtools", "colorRamp2")
 for (package in packages_to_install) {
   if (!requireNamespace(package, quietly = TRUE)) {
     install.packages(package)
@@ -23,7 +23,7 @@ for (package in packages_to_install) {
   library(package, character.only = TRUE)
 }
 
-packages_to_install <- c("edgeR", "biomaRt", "GEOquery")
+packages_to_install <- c("edgeR", "biomaRt", "GEOquery", "ComplexHeatmap")
 for (package in packages_to_install) {
   if (!requireNamespace(package, quietly = TRUE)) {
     BiocManager::install(package)
@@ -54,6 +54,8 @@ library(knitr)
 library(kableExtra)
 library(GEOquery)
 library(devtools)
+library(ComplexHeatmap)
+library(colorRamp2)
 ```
 
 # Information from previous assignment
@@ -376,7 +378,9 @@ bty = 'n', cex = 0.75)
 ```
 Seems like the sample from human donor has higher expression in general than iPSC cell line. Interesting observation.
 
-## Differetnail Gene Expression
+## Differential Gene Expression
+
+### Limma p-value method.
 ```{r p_value, results='hide'}
 model_design <- model.matrix(~exp_groups$sample_group)
 
@@ -408,14 +412,15 @@ kable(head(output_hits),type="html",row.names = FALSE)
 length(which(output_hits$P.Value < 0.05)) # passed p-value<0.05 threshold
 length(which(output_hits$adj.P.Val < 0.05)) # passed adjacent f-value < 0.05 threshold
 ```
+
 Model 2 with cell line as variable that is taken into consideration
 ```{r model2}
-model_design_pat2 <- model.matrix(~exp_groups$cell_line)
-fit_pat <- lmFit(minimalSet, model_design_pat2)
+model_design2 <- model.matrix(~exp_groups$cell_line)
+fit_pat <- lmFit(minimalSet, model_design2)
 fit_pat2 <- eBayes(fit_pat,trend=TRUE)
 
 topfit <- topTable(fit_pat2,
-coef=ncol(model_design_pat2),
+coef=ncol(model_design2),
 adjust.method = "BH",
 number = nrow(expressionMatrix))
 
@@ -462,14 +467,190 @@ xlab = "condition model p-values",
 ylab ="cell line model p-values",
 main="Condition vs cell line Limma p-value Method")
 ```
-```{r}
+
+BH was used as it is the most generic method that applies to most type of data distributions. 
+
+```{r adjust_methods_list_out}
 p.adjust.methods
 ```
 
+### EdgeR Quasi liklihood model
+```{r edgeR_quasi}
+d = DGEList(counts=minimalSet, group = exp_groups$sample_group)
+d <- estimateDisp(d, model_design)
+fit <- glmQLFit(d, model_design)
 
-### MA or Volcano Plot
+fitting_primary_vs_recurrent <- glmQLFTest(fit)
 
-### Top hit genes Heatmap
+qlf_output_hits <- topTags(fitting_primary_vs_recurrent,
+sort.by = "PValue",
+n = nrow(minimalSet),
+adjust.method = "BH"
+)
+
+kable(head(qlf_output_hits), caption="Quasi Liklihood method results group by condition type") %>% kableExtra::kable_styling()
+```
+
+Number of genes that passed the 0.05 p-value threshold. Only 336 genes are significantly differential expressed.
+Number of genes that passed the correlation
+
+```{r genes_threshold_quasi}
+length(which(qlf_output_hits$table$PValue < 0.05))
+length(which(qlf_output_hits$table$FDR < 0.05))
+```
+
+Repeat the same process, but group by cell line type.
+```{r edgeR_quasi_cell_line}
+d = DGEList(counts=minimalSet, group = exp_groups$cell_line)
+d <- estimateDisp(d, model_design2)
+fit <- glmQLFit(d, model_design2)
+
+fitting_primary_vs_recurrent <- glmQLFTest(fit)
+
+qlf_output_hits2 <- topTags(fitting_primary_vs_recurrent,
+sort.by = "PValue",
+n = nrow(minimalSet),
+adjust.method = "BH"
+)
+
+kable(head(qlf_output_hits), caption="Quasi Liklihood method results group by cell line") %>% kableExtra::kable_styling()
+```
+Genes are significantly more deferentially expressed under different cell line. The sample might not be a good representation of the target study group, or it could be the other way round, the iPSC cell line is not a good presentation of the target study group. 
+
+```{r genes_threshold_quasi}
+length(which(qlf_output_hits2$table$PValue < 0.05)) # pvalue threshold
+length(which(qlf_output_hits2$table$FDR < 0.05)) # correlation
+```
+Compare the results of the p-value methods for condition grouping.
+```{r comparison_condition}
+qlf_pat_model_pvalues <- data.frame(
+ensembl_id = rownames(qlf_output_hits$table),
+qlf_patient_pvalue=qlf_output_hits$table$PValue)
+
+limma_pat_model_pvalues <- data.frame(
+ensembl_id = output_hits$counts_data.Gene.ID,
+limma_patient_pvalue = output_hits$P.Value)
+
+two_models_pvalues <- merge(qlf_pat_model_pvalues,
+limma_pat_model_pvalues,
+by.x=1,by.y=1)
+two_models_pvalues$colour <- "black"
+two_models_pvalues$colour[two_models_pvalues$qlf_patient_pvalue
+<0.05] <- "orange"
+two_models_pvalues$colour[two_models_pvalues$limma_patient_pvalue
+<0.05] <- "blue"
+two_models_pvalues$colour[two_models_pvalues$qlf_patient_pvalue
+<0.05 &
+two_models_pvalues$limma_patient_pvalue<0.05] <- "red"
+
+two_models_pvalues_subset <-
+two_models_pvalues[which(two_models_pvalues$colour != "black"),]
+
+plot(two_models_pvalues_subset$qlf_patient_pvalue,
+two_models_pvalues_subset$limma_patient_pvalue,
+col = two_models_pvalues_subset$colour,
+xlab = "QLF patient model p-values - only significant",
+ylab ="Limma Patient model p-values Comparison results",
+main="QLF vs Limma group by condition") 
+
+legend_labels <- levels(factor(two_models_pvalues$colour))
+legend("topright", legend=c("N/A","qlf_patient_pvalue", "both", "limma_patient_pvalue"), fill=unique(two_models_pvalues$colour), cex=0.8)
+```
+
+Compare the results of the p-value for cell line grouping.
+
+```{r comparison_cellline}
+qlf_pat_model_pvalues <- data.frame(
+ensembl_id = rownames(qlf_output_hits2$table),
+qlf_patient_pvalue=qlf_output_hits2$table$PValue)
+
+limma_pat_model_pvalues <- data.frame(
+ensembl_id = output_hits2$counts_data.Gene.ID,
+limma_patient_pvalue = output_hits2$P.Value)
+
+two_models_pvalues <- merge(qlf_pat_model_pvalues,
+limma_pat_model_pvalues,
+by.x=1,by.y=1)
+two_models_pvalues$colour <- "black"
+two_models_pvalues$colour[two_models_pvalues$qlf_patient_pvalue
+<0.05] <- "orange"
+two_models_pvalues$colour[two_models_pvalues$limma_patient_pvalue
+<0.05] <- "blue"
+two_models_pvalues$colour[two_models_pvalues$qlf_patient_pvalue
+<0.05 &
+two_models_pvalues$limma_patient_pvalue<0.05] <- "red"
+
+two_models_pvalues_subset <-
+two_models_pvalues[which(two_models_pvalues$colour != "black"),]
+
+plot(two_models_pvalues_subset$qlf_patient_pvalue,
+two_models_pvalues_subset$limma_patient_pvalue,
+col = two_models_pvalues_subset$colour,
+xlab = "QLF patient model p-values - only significant",
+ylab ="Limma Patient model p-values Comparison results",
+main="QLF vs Limma group by cell line") 
+
+egend_labels <- levels(factor(two_models_pvalues$colour))
+legend("topright", legend=c("N/A","qlf_patient_pvalue", "both", "limma_patient_pvalue"), fill=unique(two_models_pvalues$colour), cex=0.8)
+```
+
+## MA or Volcano Plot
+
+### Top hit genes Heatmap of the Quasi liklihood method
+```{r heatmap prepare}
+top_hits <- rownames(qlf_output_hits$table)[
+qlf_output_hits$table$PValue<0.05]
+
+heatmap_matrix_tophits <- t(
+scale(t(expressionMatrix[which(rownames(expressionMatrix) %in% top_hits),])))
+```
+
+```{r}
+condition_type_grouped <- factor(exp_groups$condition_type, levels = unique(exp_groups$condition_type))
+
+condition_type_grouped
+```
+
+
+```{r}
+# Reorganize heatmap_matrix_tophits based on exp_groups$cell_line
+
+
+# Create annotations
+top_annotation <- HeatmapAnnotation(foo = anno_block(gp = gpar(fill = 2:length(unique(exp_groups$cell_line)))) )
+```
+
+
+```{r heatmap, fig.height=10, fig.width=12}
+
+if(min(heatmap_matrix_tophits) == 0){
+heatmap_col = colorRamp2(c( 0, max(heatmap_matrix_tophits)),
+c( "white", "red"))
+} else {
+heatmap_col = colorRamp2(c(min(heatmap_matrix_tophits), 0,
+max(heatmap_matrix_tophits)),
+c("blue", "white", "red"))
+}
+
+num_colors <- length(unique(exp_groups$sample_group))
+color_vector <- heat.colors(num_colors)
+
+current_heatmap <- ComplexHeatmap::Heatmap(as.matrix(heatmap_matrix_tophits),
+name = "exression level",                         cluster_rows = TRUE,
+cluster_columns = TRUE,
+show_row_dend = TRUE,
+show_column_dend = TRUE,
+col=heatmap_col,
+show_column_names = FALSE,
+show_row_names = FALSE,
+show_heatmap_legend = TRUE,
+column_title = "Top Hit Genes from Quasi Heatmap",
+top_annotation = HeatmapAnnotation(foo = anno_block(gp = gpar(fill = color_vector, col = NA)))
+)# Heatmap
+
+current_heatmap
+
+```
 
 ## Thresholded over-representation analysis (ORA)
 
@@ -486,6 +667,7 @@ p.adjust.methods
 ## Intrepretation - Questions and answers
 
 #### 1.	Do the over-representation results support conclusions or mechanism discussed in the original paper?
+
 #### 2.	Can you find evidence, i.e. publications, to support some of the results that you see. How does this evidence support your results.
 
 
