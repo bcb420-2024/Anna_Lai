@@ -13,9 +13,8 @@ nocite: '@*'
 ---
 
 # Setup
-
 ```{r setup, message=FALSE, warning=FALSE, results='hide'}
-packages_to_install <- c("BiocManager", "RSQLite", "readr", "gplots", "reshape2", "RColorBrewer", "grid", "BiocManager", "knitr", "kableExtra", "devtools", "colorRamp2")
+packages_to_install <- c("BiocManager", "RSQLite", "readr", "gplots", "reshape2", "RColorBrewer", "grid", "BiocManager", "knitr", "kableExtra", "devtools", "colorRamp2", "ggplot2")
 for (package in packages_to_install) {
   if (!requireNamespace(package, quietly = TRUE)) {
     install.packages(package)
@@ -56,11 +55,12 @@ library(GEOquery)
 library(devtools)
 library(ComplexHeatmap)
 library(colorRamp2)
+library(ggplot2)
 ```
 
 # Information from previous assignment
 
-About the data (with reference to lecture 4)
+About the data @dorison_kidney_2023. With reference to lecture 4 @isserlin_bcb420_2024-4.
 ```{r get_data, warning=FALSE, message=FALSE}
 data_geoid <- "GSE205647"
 gse <- getGEO(data_geoid ,GSEMatrix=FALSE)
@@ -488,7 +488,7 @@ n = nrow(minimalSet),
 adjust.method = "BH"
 )
 
-kable(head(qlf_output_hits), caption="Quasi Liklihood method results group by condition type") %>% kableExtra::kable_styling()
+kable(head(qlf_output_hits$table), caption="Quasi Liklihood method results group by condition type") %>% kableExtra::kable_styling()
 ```
 
 Number of genes that passed the 0.05 p-value threshold. Only 336 genes are significantly differential expressed.
@@ -513,7 +513,7 @@ n = nrow(minimalSet),
 adjust.method = "BH"
 )
 
-kable(head(qlf_output_hits), caption="Quasi Liklihood method results group by cell line") %>% kableExtra::kable_styling()
+kable(head(qlf_output_hits2$table), caption="Quasi Liklihood method results group by cell line") %>% kableExtra::kable_styling()
 ```
 Genes are significantly more deferentially expressed under different cell line. The sample might not be a good representation of the target study group, or it could be the other way round, the iPSC cell line is not a good presentation of the target study group. 
 
@@ -594,35 +594,111 @@ egend_labels <- levels(factor(two_models_pvalues$colour))
 legend("topright", legend=c("N/A","qlf_patient_pvalue", "both", "limma_patient_pvalue"), fill=unique(two_models_pvalues$colour), cex=0.8)
 ```
 
-## MA or Volcano Plot
+## Volcano Plot For down regualred versus up regulated genes
+
+Number of Up-regualted versus down regulated gene sets resulted from Tophis in Quasi
+```{r up_down_regualtion}
+length(which(qlf_output_hits$table$PValue < 0.05
+& qlf_output_hits$table$logFC > 0))
+
+length(which(qlf_output_hits$table$PValue < 0.05
+& qlf_output_hits$table$logFC < 0))
+```
+
+Created with reference to online resources @noauthor_volcano_2022.
+```{r Volcano Plot condition, fig.height=7, fig.width=10}
+# Create a basic volcano plot
+
+volcano_qlf_output_hits <- qlf_output_hits
+volcano_qlf_output_hits$table$diffexpressed <- "NO"
+
+volcano_qlf_output_hits$table$diffexpressed[volcano_qlf_output_hits$table$logFC > 0.6 & volcano_qlf_output_hits$table$PValue < 0.05] <- "UP"
+
+volcano_qlf_output_hits$table$diffexpressed[volcano_qlf_output_hits$table$logFC< -0.6 & volcano_qlf_output_hits$table$PValue < 0.05] <- "DOWN"
+
+ggplot2::ggplot(
+  data = qlf_output_hits$table, 
+  aes(x = qlf_output_hits$table$logFC, 
+      y = -log10(qlf_output_hits$table$PValue),
+      col = volcano_qlf_output_hits$table$diffexpressed)
+  
+  ) +
+  geom_point() +
+  geom_vline(xintercept = c(-0.5, 0.5), col = "gray", linetype = 'dashed')+
+  geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
+  geom_point(size = 3)+
+  scale_color_manual(values = c("#00AFBB", "grey", "#FFDB6D"), 
+                     labels = c("Downregulated", "Not significant", "Upregulated"))+
+  labs(title = "Volcano Scatter Plot For Quasi results grouped by condition",
+     x = "Log Fold Change",
+     y = "-Log10 P Value",
+     color = "Expression Status") 
+```
+```{r Volcano Plot cell line, fig.height=7, fig.width=10}
+
+volcano_qlf_output_hits2 <- qlf_output_hits2
+volcano_qlf_output_hits2$table$diffexpressed <- "NO"
+
+volcano_qlf_output_hits2$table$diffexpressed[volcano_qlf_output_hits2$table$logFC > 0.6 & volcano_qlf_output_hits2$table$PValue < 0.05] <- "UP"
+
+volcano_qlf_output_hits2$table$diffexpressed[volcano_qlf_output_hits2$table$logFC< -0.6 & volcano_qlf_output_hits2$table$PValue < 0.05] <- "DOWN"
+
+# volcano_qlf_output_hits2$table$diffexpressed[rownames(volcano_qlf_output_hits2$table) == "ENSG00000116218"] <- "NPHS2"
+
+ggplot2::ggplot(
+  data = volcano_qlf_output_hits2$table, 
+  aes(x = qlf_output_hits2$table$logFC, 
+      y = -log10(qlf_output_hits2$table$PValue),
+      col = volcano_qlf_output_hits2$table$diffexpressed)
+  
+  ) +
+  geom_point() +
+  geom_vline(xintercept = c(-0.5, 0.5), col = "gray", linetype = 'dashed')+
+  geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
+  geom_point(size = 3)+
+  scale_color_manual(values = c("#00AFBB", "grey", "#FFDB6D", "black"), 
+                     labels = c("DOWN", "NO", "UP", "NPHS2"))+
+  labs(title = "Volcano Scatter Plot For Quasi results grouped by cell line",
+     x = "Log Fold Change",
+     y = "-Log10 P Value",
+     color = "Expression Status") 
+```
+
+In the paper, the gene NPHS2 ENSG00000116218 was the gene of interest and under modification in their study.
+```{r gene of interest}
+qlf_output_hits$table[rownames(qlf_output_hits$table) == "ENSG00000116218", ]
+qlf_output_hits2$table[rownames(qlf_output_hits2$table) == "ENSG00000116218", ]
+```
+
 
 ### Top hit genes Heatmap of the Quasi liklihood method
-```{r heatmap prepare}
+Completed with reference to Lecture 7 @isserlin_bcb420_2024.
+```{r heatmap, fig.height=10, fig.width=12}
+# prepare for heatmap
 top_hits <- rownames(qlf_output_hits$table)[
 qlf_output_hits$table$PValue<0.05]
 
 heatmap_matrix_tophits <- t(
 scale(t(expressionMatrix[which(rownames(expressionMatrix) %in% top_hits),])))
-```
 
-```{r}
-condition_type_grouped <- factor(exp_groups$condition_type, levels = unique(exp_groups$condition_type))
+# Top annotation 
+unique_sample_group <- unique(exp_groups$patient)
+unique_sample_groupcolors <- rainbow(n = length(unique_sample_group))
+names(unique_sample_groupcolors) <- unique_sample_group
 
-condition_type_grouped
-```
+unique_cell_line <- unique(exp_groups$cell_line)
+unique_cell_linecolors <- rainbow(n = length(unique_cell_line))
+names(unique_cell_linecolors) <- unique_cell_line
 
+ha_pat <- HeatmapAnnotation(df = data.frame(
+sample_gp = exp_groups$sample_group,
+cell_type = exp_groups$cell_line),
+col = list(
+sample_group = unique_sample_groupcolors,
+tumor_type = unique_cell_linecolors),
+show_legend = TRUE)
 
-```{r}
-# Reorganize heatmap_matrix_tophits based on exp_groups$cell_line
-
-
-# Create annotations
-top_annotation <- HeatmapAnnotation(foo = anno_block(gp = gpar(fill = 2:length(unique(exp_groups$cell_line)))) )
-```
-
-
-```{r heatmap, fig.height=10, fig.width=12}
-
+# draw heatmap
 if(min(heatmap_matrix_tophits) == 0){
 heatmap_col = colorRamp2(c( 0, max(heatmap_matrix_tophits)),
 c( "white", "red"))
@@ -636,7 +712,8 @@ num_colors <- length(unique(exp_groups$sample_group))
 color_vector <- heat.colors(num_colors)
 
 current_heatmap <- ComplexHeatmap::Heatmap(as.matrix(heatmap_matrix_tophits),
-name = "exression level",                         cluster_rows = TRUE,
+name = "exression level",                         
+cluster_rows = TRUE,
 cluster_columns = TRUE,
 show_row_dend = TRUE,
 show_column_dend = TRUE,
@@ -645,7 +722,7 @@ show_column_names = FALSE,
 show_row_names = FALSE,
 show_heatmap_legend = TRUE,
 column_title = "Top Hit Genes from Quasi Heatmap",
-top_annotation = HeatmapAnnotation(foo = anno_block(gp = gpar(fill = color_vector, col = NA)))
+top_annotation = ha_pat
 )# Heatmap
 
 current_heatmap
@@ -654,25 +731,20 @@ current_heatmap
 
 ## Thresholded over-representation analysis (ORA)
 
-### Method chosen
-### Up-regualted versus down regulated gene sets
-```{r up_down_regualtion}
-# length(which(qlf_output_hits$table$PValue < 0.05
-# & qlf_output_hits$table$logFC > 0))
-# 
-# length(which(qlf_output_hits$table$PValue < 0.05
-# & qlf_output_hits$table$logFC < 0))
+```{r ORA}
+
 ```
+
+
+### Method chosen
 
 ## Intrepretation - Questions and answers
 
-#### 1.	Do the over-representation results support conclusions or mechanism discussed in the original paper?
+#### 1.	Do the over-representation results support conclusions or mechanism discussed in the original paper? 
+
 
 #### 2.	Can you find evidence, i.e. publications, to support some of the results that you see. How does this evidence support your results.
 
 
-## Citations (if any)
-
-Lecture 4 BCB420 by Professor Ruth Isserlin. 
-
-https://bioconductor.org/packages/release/bioc/html/GEOquery.html
+## Citations
+<div id="refs"></div>
