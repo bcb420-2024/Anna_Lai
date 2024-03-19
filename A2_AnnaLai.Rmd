@@ -731,8 +731,27 @@ current_heatmap
 
 ## Thresholded over-representation analysis (ORA)
 
-```{r ORA}
+Create the list 
+Code developed with reference to lecture 8 @isserlin_bcb420_2024-2 .
+```{r p-value ranked gene list}
+#merge gene names with the top hits 
+qlf_output_hits_withgn <- merge(counts_data[,c("Gene.ID", "Gene.Name")], qlf_output_hits, by.x=1, by.y = 0)
 
+qlf_output_hits_withgn[,"rank"] <- log(qlf_output_hits_withgn$PValue,base =10) * sign(qlf_output_hits_withgn$logFC) 
+
+qlf_output_hits_withgn <- qlf_output_hits_withgn[order(qlf_output_hits_withgn$rank),]
+
+write.table(x=data.frame(genename= qlf_output_hits_withgn$Gene.Name, F_stat= qlf_output_hits_withgn$rank),
+file=file.path(getwd(),"primary_vs_recurrent_ranked_genelist.txt"), sep = "\t",row.names = FALSE, col.names = FALSE,quote = FALSE)
+```
+
+Create list of up-regulated genes and down-regulated genes. Make them available for download and perform enrichment analysis with the file.
+```{r p-vaue ranked gene list}
+upregulated_genes <- qlf_output_hits_withgn$Gene.Name[ which(qlf_output_hits_withgn$PValue < 0.05 & qlf_output_hits_withgn$logFC > 0)]
+downregulated_genes <- qlf_output_hits_withgn$Gene.Name[ which(qlf_output_hits_withgn$PValue < 0.05 & qlf_output_hits_withgn$logFC < 0)]
+
+write.table(x=upregulated_genes, file=file.path(getwd(),"ovrecurrent_upregulated_genes.txt"), sep = "\t",row.names = FALSE, col.names = FALSE,quote = FALSE)
+write.table(x=downregulated_genes, file=file.path(getwd(),"ovrecurrent_downregulated_genes.txt"), sep = "\t",row.names = FALSE, col.names = FALSE,quote = FALSE)
 ```
 
 
