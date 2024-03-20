@@ -1,0 +1,213 @@
+---
+title: "Assignment 3 BCB 420"
+subtitle: "Pathway Analysis for of NPHS2 Point Variants"
+author: "Anna T. Lai"
+date: "`April 01, 2024`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+bibliography: assignment_reference.bib
+csl: biomed-central.csl
+nocite: '@*'
+---
+
+# Setup
+```{r setup, message=FALSE, warning=FALSE, results='hide'}
+packages_to_install <- c("BiocManager", "RSQLite", "readr", "gplots", "reshape2", "RColorBrewer", "grid", "BiocManager", "knitr", "kableExtra", "devtools", "colorRamp2", "ggplot2")
+for (package in packages_to_install) {
+  if (!requireNamespace(package, quietly = TRUE)) {
+    install.packages(package)
+  }
+  library(package, character.only = TRUE)
+}
+
+packages_to_install <- c("edgeR", "biomaRt", "GEOquery", "ComplexHeatmap")
+for (package in packages_to_install) {
+  if (!requireNamespace(package, quietly = TRUE)) {
+    BiocManager::install(package)
+  }
+}
+
+packages_to_install <- c("crsh/citr") #Use Zotero for citation
+for (package in packages_to_install) {
+  if (!requireNamespace(package, quietly = TRUE)) {
+    devtools::install_github(package)
+  }
+}
+
+# library(GEOmetadb) # Doesn't work anymore
+library(BiocManager)
+library(RSQLite)
+library(readr)
+library(utils)
+library(base)
+library(dplyr)
+library(gplots)
+library(reshape2)
+library(RColorBrewer)
+library(grid)
+library(edgeR)
+library(biomaRt)
+library(knitr)
+library(kableExtra)
+library(GEOquery)
+library(devtools)
+library(ComplexHeatmap)
+library(colorRamp2)
+library(ggplot2)
+```
+
+```{r Setup GSEA}
+tryCatch(expr = { library("RCurl")}, 
+         error = function(e) {  install.packages("RCurl")}, 
+         finally = library("RCurl"))
+
+tryCatch(expr = { library("BiocManager")}, 
+         error = function(e) { 
+           install.packages("BiocManager")}, 
+         finally = library("BiocManager"))
+tryCatch(expr = { library("ggplot2")}, 
+         error = function(e) { install.packages("ggplot2")}, 
+         finally = library("ggplot2"))
+tryCatch(expr = { library("RCy3")}, 
+         error = function(e) { BiocManager::install("RCy3")}, 
+         finally = library("RCy3"))
+```
+
+# Recap about the data
+
+About the data @dorison_kidney_2023. With reference to lecture 4 @isserlin_bcb420_2024-4.
+```{r get_data, warning=FALSE, message=FALSE}
+data_geoid <- "GSE205647"
+gse <- getGEO(data_geoid ,GSEMatrix=FALSE)
+gse@header$overall_design
+```
+
+Un-comment to download the files to local PC. The files are already included in the GitHub repo, just in case.There are two files in this dataset and we use the counts data.
+```{r files, warning=FALSE, message=FALSE}
+sfilenames = getGEOSuppFiles(data_geoid,
+fetch_files = FALSE)
+sfilenames
+
+# Extract zipped files in the format of gz
+# extract_gz <- function(file_path) {
+#   message("Extracting:", basename(file_path))
+#   extracted_file_name <- gsub(".gz", "", file_path)
+#   
+#   if (!file.exists(extracted_file_name)){
+#     gunzip(file_path)
+#   }
+# }
+# 
+
+# for (filename in sfilenames$fname) {
+#   file_path <- file.path(getwd(), filename)
+#   if (file.exists(file_path) && file.info(file_path)$size > 0) {
+#     extract_gz(file_path)
+#   }
+# }
+```
+
+```{r read_file, warning=FALSE}
+files <- c("GSE205647_counts.txt", "GSE205647_genes.txt")
+
+counts_data <- read.table(files[1], header = TRUE)
+genes_data <- read.table(files[2], header = TRUE)
+```
+
+
+```{r identical_files}
+sorted_counts_data <- counts_data[order(counts_data$Gene.ID, counts_data$Chrom), ]
+sorted_genes_data <- genes_data[order(genes_data$Gene.ID, genes_data$Chrom), ]
+
+sorted_first_four_cols_of_counts_data <- sorted_counts_data[, 1:4]
+names(sorted_first_four_cols_of_counts_data) <- c("Gene.ID", "Chrom", "Gene.Name", "Biotype")
+names(sorted_genes_data) <- c("Gene.ID", "Chrom", "Gene.Name", "Biotype")
+
+attr(sorted_first_four_cols_of_counts_data, "row.names") <- NULL
+attr(sorted_genes_data, "row.names") <- NULL
+
+all.equal(sorted_first_four_cols_of_counts_data, sorted_genes_data)
+```
+From the above, we conclude that genes.txt. is a subset of counts.txt. We will move on to only investigate counts.txt.
+
+#### Rename the column name for easier identification.
+All the samples were processed on December 28, 2021. The method of processing sequence read is Transcription Start Site Trimmed RNA (TSStrimRNAs).
+```{r rename_columns}
+rm_prefix <- "X211101_A01221_0077_"
+rm_suffix <- "\\.20211028_TSStrmRNA$"
+
+new_col_names <- sub(paste0("^", rm_prefix), "", colnames(counts_data))
+
+new_col_names <- sub(rm_suffix, "", new_col_names)
+colnames(counts_data) <- new_col_names 
+```
+
+## Data cleaning
+
+### Remove gene with no expression at all in all conditions; Final Coverage{#coverage}
+```{r remove_no_exp}
+before_no <- dim(counts_data)[1]
+selected_columns <- counts_data[, 5:ncol(counts_data)]
+row_sums <- apply(selected_columns, 1, sum)
+rows_to_keep <- row_sums > 1
+filtered_counts_data <- counts_data[rows_to_keep,]
+counts_data <- filtered_counts_data # for the ease of coding in the following sections
+
+nrow(counts_data)
+```
+The number of genes remained after removing the genes without expression is `r nrow(filtered_counts_data)`. Before removing genes with no expression at all is `r before_no`. The difference is `r nrow(filtered_counts_data) - before_no`.
+
+```{r remove_low_count}
+subset_data <- counts_data[, 5:ncol(counts_data)]
+min_num_samples <- ncol(counts_data)/2
+data_matrix <- as.matrix(subset_data)
+
+keep = rowSums(cpm(data_matrix) >1) > min_num_samples
+filtered_data_matrix= data_matrix[keep,]
+counts_data <- counts_data[keep,]
+
+nrow(counts_data)
+```
+Choose min number of samples to roughly half of the column numbers so that there's some comparison. This reduced the number of genes of interest to `r nrow(counts_data)`. This is my final coverage.
+
+## Data Normalization
+
+### Apply Trimmed Mean of M-values to counts_data based on Samples
+With reference to lecture 5.
+
+Data grouping according to sample. Added cell line from Assignment 1 for investigation.
+```{r grouping}
+sample_groups <- unlist(lapply(c(rep("808.3", 3), rep("808.5", 3), rep("G92C", 3), rep("P118L", 3), rep("R138Q", 3), rep("R168H.D7.14", 3), rep("R291W", 3), rep("R168H.RG.Un", 3), rep("R168H.RG.Pro", 3)), identity))
+sample_groups <- append(sample_groups, "NTC")
+
+rep <- rep(c(1, 2, 3), times = 9) 
+rep <- append(rep, 1)
+
+cell_line <- unlist(lapply(c(rep("iPSC", 21), rep("Human Sample", 6)), identity))
+cell_line <- append(cell_line, "iPSC")
+
+exp_groups <- cbind(colnames(subset_data), sample_groups, rep, cell_line)
+
+exp_groups <- data.frame(sample_group = sample_groups, replication = rep, cell_line=cell_line)
+exp_groups
+```
+
+```{r TMM}
+d = DGEList(counts=as.matrix(subset_data), group=exp_groups$sample_groups)
+d = calcNormFactors(d)
+normalized_count_data <- cpm(d)
+```
+
+# Continued Data Exloration Journey
+## Gene Enrichment Map
+
+With reference to @noauthor_enrichment_nodate-1.
+```{r enrichment}
+
+```
+
+
+## Citations
+<div id="refs"></div>
