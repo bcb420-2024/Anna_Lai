@@ -670,7 +670,6 @@ qlf_output_hits$table[rownames(qlf_output_hits$table) == "ENSG00000116218", ]
 qlf_output_hits2$table[rownames(qlf_output_hits2$table) == "ENSG00000116218", ]
 ```
 
-
 ### Top hit genes Heatmap of the Quasi liklihood method
 Completed with reference to Lecture 7 @isserlin_bcb420_2024.
 ```{r heatmap, fig.height=10, fig.width=12}
@@ -735,6 +734,7 @@ Create the list
 Code developed with reference to lecture 8 @isserlin_bcb420_2024-2 .
 ```{r p-value ranked gene list}
 #merge gene names with the top hits 
+# the Threshold used is Quasi.
 qlf_output_hits_withgn <- merge(counts_data[,c("Gene.ID", "Gene.Name")], qlf_output_hits, by.x=1, by.y = 0)
 
 qlf_output_hits_withgn[,"rank"] <- log(qlf_output_hits_withgn$PValue,base =10) * sign(qlf_output_hits_withgn$logFC) 
@@ -756,6 +756,40 @@ write.table(x=downregulated_genes, file=file.path(getwd(),"ovrecurrent_downregul
 
 
 ### Method chosen
+I decided to use g:profiler @raudvere_gprofiler_2019 for enrichment analysis. 
+
+Parameter used:
+
+* Significance Threshold: FER
+
+* User threshold: 0.05
+
+* Gene Ontology: GO Molecular Function, GO Biological Process, Reactome
+
+### All Differentially Expressed Genes
+
+![GO result.](./A3figs/Full_2.png) 318 total gene sets returned. The top term is Cell Cycle, Mitotic. 
+
+![Caption: Enrichment results](./A3figs/Full_3.png) 
+![Caption: Enrichment results continue](./A3figs/Full_4.png) 
+
+![Caption: Paremeters used.](./A3figs/Full_1.png) 
+### Up-Regualted Genes
+
+ ![Caption: GO result.](./A3figs/UpReg_1.png) 
+![Caption: Up regulated genes are mostly involved with cat ion binding.](./A3figs/UpReg_2.png) 
+![Caption: Paremeters used.](./A3figs/UpReg_3.png) 
+  
+### Down-Regualted Genes
+
+There are way more down-regulated genes than up regulated genes.
+
+![Caption: Go result.](./A3figs/DownReg_3.png) 
+![Caption: Enrichment results](./A3figs/DownReg_1.png) 
+
+Down regulated genes are mostly involved with GO:BP: actomyosin contractile ring assembly, REAC: Condensation of Prometaphase Chromosomes. 
+
+![Caption: Paremeters used.](./A3figs/DownReg_2.png) 
 
 ## Intrepretation - Questions and answers
 
