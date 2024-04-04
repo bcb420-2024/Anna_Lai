@@ -29,12 +29,12 @@ for (package in packages_to_install) {
   }
 }
 
-packages_to_install <- c("crsh/citr") #Use Zotero for citation
-for (package in packages_to_install) {
-  if (!requireNamespace(package, quietly = TRUE)) {
-    devtools::install_github(package)
-  }
-}
+# packages_to_install <- c("crsh/citr") #Use Zotero for citation
+# for (package in packages_to_install) {
+#   if (!requireNamespace(package, quietly = TRUE)) {
+#     devtools::install_github(package)
+#   }
+# }
 
 # library(GEOmetadb) # Doesn't work anymore
 library(BiocManager)
@@ -768,6 +768,7 @@ Parameter used:
 
 ### All Differentially Expressed Genes
 
+#### Up-regulated Genes
 ![GO result.](./A2figs/Full_2.png) 318 total gene sets returned. The top term is Cell Cycle, Mitotic. 
 
 ![Caption: Enrichment results](./A2figs/Full_3.png) 
@@ -778,6 +779,8 @@ Parameter used:
 
  ![Caption: GO result.](./A2figs/UpReg_1.png) 
 ![Caption: Up regulated genes are mostly involved with cat ion binding.](./A2figs/UpReg_2.png) 
+#### Down-regulated Genes
+
 ![Caption: Paremeters used.](./A2figs/UpReg_3.png) 
   
 ### Down-Regualted Genes
@@ -793,10 +796,19 @@ Down regulated genes are mostly involved with GO:BP: actomyosin contractile ring
 
 ## Intrepretation - Questions and answers
 
-#### 1.	Do the over-representation results support conclusions or mechanism discussed in the original paper? 
+#### 1.	Do the over-representation results support conclusions or mechanism discussed in the original paper?
 
+The key findings of the paper suggest that the NPHS2 variant lines resulted in reduced functional PODOCIN protein despite reduced the level of PODOCIN protein transcription remained the same, the localization of the mutated PODOCIN protein, namely P118L and R138Q were retained in Endoplasmic Reticulum (ER); R168 and R291 were retained in the Golgi apparatus. 
+
+There is not direct inducation on the regulation of genes in cell cycle, mitotic, G2/M, or DNA replication checkpoint, actomyosin contractile ring assembly and chromosome condensation genes or pathways. 
+
+The analysis above have shown that ell cycle, mitotic, G2/M, and DNA replication checkpoint genes have been up regulated, and genes involved in actomyosin contractile ring assembly and chromosome condensation are down regulated. This could indicate NPHS2 variants may be disrupting normal cell cycle regulation and progression in the podocytes. Destruction of cell cycle leads to fatal consequences such as abnornal proliferation like cancer cell and even cell death. Downregulation of genes involved in actomyosin contractile ring assembly and chromosome condensation means normal function of cell division and cytokineses are interrupted in the mutant cells. In short, NPHS2 has an significant impact on the cell, which further justified why the gene was of interest to the scientists. Further pathway analysis will be interesting to see.
 
 #### 2.	Can you find evidence, i.e. publications, to support some of the results that you see. How does this evidence support your results.
+
+Upond further research, it is noted that downregulation of genes involved in actomyosin contractile ring assembly and chromosome condensation is particularly concerning with previous findings confirming the potential pathway, as it indicates potential impairment of critical podocyte functions. This could contribute to the development of proteinuria and progression to focal segmental glomerulosclerosis (FSGS) observed in patients with NPHS2 variants @noauthor_effect_2022.
+
+Focal segmental glomerulosclerosis (FSGS) can be caused by mutations in the genes NPHS2, ACTN4, TRPC6, and INF2 among others, presenting variable levels of proteinuria, including nephrotic syndrome, that frequently progress to end-stage renal disease (ESRD) @noauthor_effect_2022. 
 
 
 ## Citations

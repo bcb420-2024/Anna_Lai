@@ -6,7 +6,7 @@ date: "`April 01, 2024`"
 output:
   html_document:
     toc: true
-    toc_depth: 2
+    toc_depth: 3
 bibliography: assignment_reference.bib
 csl: biomed-central.csl
 nocite: '@*'
@@ -26,13 +26,6 @@ packages_to_install <- c("edgeR", "biomaRt", "GEOquery", "ComplexHeatmap")
 for (package in packages_to_install) {
   if (!requireNamespace(package, quietly = TRUE)) {
     BiocManager::install(package)
-  }
-}
-
-packages_to_install <- c("crsh/citr") #Use Zotero for citation
-for (package in packages_to_install) {
-  if (!requireNamespace(package, quietly = TRUE)) {
-    devtools::install_github(package)
   }
 }
 
@@ -58,24 +51,7 @@ library(colorRamp2)
 library(ggplot2)
 ```
 
-```{r Setup GSEA}
-tryCatch(expr = { library("RCurl")}, 
-         error = function(e) {  install.packages("RCurl")}, 
-         finally = library("RCurl"))
-
-tryCatch(expr = { library("BiocManager")}, 
-         error = function(e) { 
-           install.packages("BiocManager")}, 
-         finally = library("BiocManager"))
-tryCatch(expr = { library("ggplot2")}, 
-         error = function(e) { install.packages("ggplot2")}, 
-         finally = library("ggplot2"))
-tryCatch(expr = { library("RCy3")}, 
-         error = function(e) { BiocManager::install("RCy3")}, 
-         finally = library("RCy3"))
-```
-
-# Recap about the data
+# Information from previous assignment
 
 About the data @dorison_kidney_2023. With reference to lecture 4 @isserlin_bcb420_2024-4.
 ```{r get_data, warning=FALSE, message=FALSE}
@@ -172,6 +148,116 @@ nrow(counts_data)
 ```
 Choose min number of samples to roughly half of the column numbers so that there's some comparison. This reduced the number of genes of interest to `r nrow(counts_data)`. This is my final coverage.
 
+### Investigate gene dupication in the file {#rep}
+ 
+```{r duplicate}
+# print duplicate count by Gene.ID
+duplicates_count <- counts_data%>% 
+  group_by(Gene.ID) %>% 
+  mutate(duplicate_count = n()) %>% 
+  filter(duplicate_count > 1)
+
+print(nrow(duplicates_count))
+
+# print duplicate count by Gene.Name
+duplicates_count <- counts_data %>% 
+  group_by(Gene.Name, Chrom) %>% 
+  mutate(duplicate_count = n()) %>% 
+  filter(duplicate_count > 1) %>% 
+  summarize(duplicate_count = n_distinct(Gene.ID))%>%
+  arrange(desc(duplicate_count))
+
+duplicates_count
+length(unique(duplicates_count$Gene.Name))
+```
+
+From the above we see that there is no gene with the same Ensembl ID. Each of them are unique. However, there are `r length(unique(duplicates_count$Gene.Name))` genes duplicates when grouped by gene symbol. Upon further investigation, some of the gene are located at a different chromosome, hence, the number of duplication of gene paired chromosome location is calculated. The number is `r nrow(duplicates_count)`.
+
+At this stage, since each gene has an unique Ensembl ID, we will not discard any gene from the `r nrow(filtered_counts_data)` gene pool.
+
+
+### Visualizations 
+Most of the genes in the list are protein encoding.
+
+```{r biotype}
+biotype_tabulation <- table(counts_data$Biotype)
+biotype_df <- data.frame(Biotype = names(biotype_tabulation), Count = as.vector(biotype_tabulation))
+
+biotype_df<- biotype_df %>% 
+  arrange(desc(Count))
+
+biotype_df %>% 
+  kable(caption = "Descending Sorting by Count") %>% 
+  kable_styling(position = "center")
+
+```
+
+```{r visual _heatmap, fig.height = 18, fig.width = 26, warning=FALSE}
+# Subset the data
+subset_data <- counts_data[, 5:ncol(counts_data)]
+rownames(subset_data) <- counts_data$Gene.ID
+
+ds <- data.frame(subset_data)
+rn <- counts_data[,3]
+cn <- colnames(subset_data)
+x <- data.matrix(ds, rownames.force = FALSE)
+
+par(fig = c(0, 1, 0, 1), mar = c(5.1, 4.1, 4.1, 8.1))
+x_log <- log2(x)
+x_log[which(x_log == -Inf)] <- 0
+
+hm <- heatmap(x_log, Rowv = NA, Colv = NA, margins = c(5, 10), col = colorRampPalette(rev(brewer.pal(9, "YlOrBr")))(256), scale = "none", dendrogram = "none", xlab = "", ylab = "", main = "Visualized Log2 Gene Count per Experimental Condition After Filtering Data", labRow = rn, labCol = cn)
+```
+
+Expression of the genes for the last condition is low in general. Since we removed the genes with low count, all the rows look pretty active. Condition 8, 12, 21 seems to have lower expression level then all other conditions. 
+
+```{r condition}
+colnames(counts_data)[8]
+colnames(counts_data)[12]
+colnames(counts_data)[21]
+colnames(counts_data)[31]
+```
+
+Box plot with reference with lecture 5 normalization codes after data filtering.
+
+```{r boxplot}
+boxplot(x_log, xlab = "Samples", ylab = "log2 TPM",
+las = 2, cex = 0.5, cex.lab = 0.5,
+cex.axis = 0.5, main = "Experimental conditions expression log2 TPM")
+
+abline(h = median(apply(x_log, 2, median)),
+col = "red", lwd = 0.6, lty = "dashed")
+```
+
+Density plot with reference to lecture 5 normalization codes. Before normalization. 
+
+```{r density_before, fig.height = 12, fig.width = 22}
+counts_density <- apply(log2(subset_data), 2, density)
+
+xlim <- 0; ylim <- 0
+for (i in 1:length(counts_density)) {
+xlim <- range(c(xlim, counts_density[[i]]$x));
+ylim <- range(c(ylim, counts_density[[i]]$y))
+}
+cols <- rainbow(length(counts_density))
+ltys <- rep(1, length(counts_density))
+
+
+plot(counts_density[[1]], xlim=xlim, ylim=ylim, type="n",
+ylab="Smoothing density of log2-CPM Before normalization",
+main="", cex.lab = 0.85)
+
+for (i in 1:length(counts_density))
+lines(counts_density[[i]], col=cols[i], lty=ltys[i])
+#create legend
+legend("topright", colnames(subset_data),
+col=cols, lty=ltys, cex=0.75,
+border ="blue", text.col = "green4",
+merge = TRUE, bg = "gray90")
+```
+
+It seems like my data does not follow a normal distribution, rather, an anti-symmetry distribution is observed.There is a sample that lies completely to the left side. Perhaps it is the NTC sample. 
+
 ## Data Normalization
 
 ### Apply Trimmed Mean of M-values to counts_data based on Samples
@@ -200,16 +286,517 @@ d = calcNormFactors(d)
 normalized_count_data <- cpm(d)
 ```
 
-# Continued Data Exloration 3
-## Non-Threshold Gene Set Enrichement Analysis
-## Gene Enrichment Map
+Box plot with reference with lecture 5 normalization codes after normalization. The median aligned together except for the last condition NTC. Normalization successfully applied to the data.
+```{r boxplot_after_norm}
+x_log <- log2(normalized_count_data)
+x_log[which(x_log == -Inf)] <- 0
 
+boxplot(x_log, xlab = "Samples", ylab = "log2 TPM",
+las = 2, cex = 0.5, cex.lab = 0.5,
+cex.axis = 0.5, main = "Experimental conditions expression log2 TPM After Normalization")
 
-```{r non_enrichment}
-normalized_count_data 
+abline(h = median(apply(x_log, 2, median)),
+col = "red", lwd = 0.6, lty = "dashed")
 ```
 
+Density plot with reference to lecture 5 normalization codes.
+```{r density_after, fig.height = 12, fig.width = 22}
+counts_density <- apply(log2(normalized_count_data), 2, density)
+
+xlim <- 0; ylim <- 0
+for (i in 1:length(counts_density)) {
+xlim <- range(c(xlim, counts_density[[i]]$x));
+ylim <- range(c(ylim, counts_density[[i]]$y))
+}
+cols <- rainbow(length(counts_density))
+ltys <- rep(1, length(counts_density))
+
+
+plot(counts_density[[1]], xlim=xlim, ylim=ylim, type="n",
+ylab="Smoothing density of log2-CPM After normalization",
+main="", cex.lab = 0.85)
+
+for (i in 1:length(counts_density))
+lines(counts_density[[i]], col=cols[i], lty=ltys[i])
+#create legend
+legend("topright", colnames(subset_data),
+col=cols, lty=ltys, cex=0.75,
+border ="blue", text.col = "green4",
+merge = TRUE, bg = "gray90")
+```
+The data looks more centered after normalization. 
+
+# Assignment 2 Recap
+
+### MDS plot
+I have not included this plot in the previous assignment.Plotted with reference to lecture 5. 
+```{r MDS_condition, fig.height = 8, fig.width = 8}
+colors_plot<- sample(colors()[1:657], 10)
+
+limma::plotMDS(normalized_count_data, labels=NULL,pch=1, cex=0.8,
+col = colors_plot[factor(exp_groups$sample_group)], main = "Multidimensional Scaling (MDS) after normalization group by mutation condition")
+
+legend("top",
+legend=levels(factor(exp_groups$sample_group)),
+pch=c(1), col=
+colors_plot,title="Class",
+bty = 'n', cex = 0.75)
+```
+The data is separted into NTC and non NTC according to the MDS graph. 
+
+```{r MDS_bio_rep, fig.height = 8, fig.width = 8}
+colors_plot<- c("red3", "green2", "blue2")
+limma::plotMDS(normalized_count_data, labels=NULL,pch=1, cex=0.8,
+col = colors_plot[factor(exp_groups$replication)], main = "Multidimensional Scaling (MDS) after normalization group by bio-replicate num")
+
+legend("top",
+legend=levels(factor(exp_groups$replication)),
+pch=c(1), col=
+colors_plot,title="Class",
+bty = 'n', cex = 0.75)
+```
+No significant difference showned. The 1 at the left hand side is of type NTc. 
+
+```{r MDS_cell_line, fig.height = 8, fig.width = 8}
+colors_plot<- c("red3", "blue2")
+
+limma::plotMDS(normalized_count_data, labels=NULL,pch=1, cex=1,
+col = colors_plot[factor(exp_groups$cell_line)], main = "Multidimensional Scaling (MDS) after normalization group by Cell Line")
+
+legend("top",
+legend=levels(factor(exp_groups$cell_line)),
+pch=c(1), col=
+colors_plot,title="Class",
+bty = 'n', cex = 0.75)
+```
+Seems like the sample from human donor has higher expression in general than iPSC cell line. Interesting observation.
+
+## Differential Gene Expression
+
+### Limma p-value method.
+```{r p_value, results='hide'}
+model_design <- model.matrix(~exp_groups$sample_group)
+
+expressionMatrix <- as.matrix(normalized_count_data)
+rownames(expressionMatrix) < counts_data$Gene.ID
+colnames(expressionMatrix) <- colnames(normalized_count_data)
+minimalSet <- ExpressionSet(assayData=expressionMatrix)
+
+fit <- lmFit(minimalSet, model_design)
+fit2 <- eBayes(fit,trend=TRUE)
+
+topfit <- topTable(fit2,
+coef=ncol(model_design),
+adjust.method = "BH",
+number = nrow(expressionMatrix))
+
+
+output_hits <- merge(data.frame(counts_data$Gene.ID, counts_data$Gene.Name), topfit, by.y=0, by.x=1, all.y=TRUE)
+output_hits <- output_hits[order(output_hits$P.Value),]
+
+```
+
+```{r table}
+kable(head(output_hits),type="html",row.names = FALSE)
+```
+
+
+```{r p_value_pass}
+length(which(output_hits$P.Value < 0.05)) # passed p-value<0.05 threshold
+length(which(output_hits$adj.P.Val < 0.05)) # passed adjacent f-value < 0.05 threshold
+```
+
+Model 2 with cell line as variable that is taken into consideration
+```{r model2}
+model_design2 <- model.matrix(~exp_groups$cell_line)
+fit_pat <- lmFit(minimalSet, model_design2)
+fit_pat2 <- eBayes(fit_pat,trend=TRUE)
+
+topfit <- topTable(fit_pat2,
+coef=ncol(model_design2),
+adjust.method = "BH",
+number = nrow(expressionMatrix))
+
+
+output_hits2 <- merge(data.frame(counts_data$Gene.ID, counts_data$Gene.Name), topfit, by.y=0, by.x=1, all.y=TRUE)
+output_hits2 <- output_hits2[order(output_hits2$P.Value),]
+```
+
+```{r table2}
+kable(head(output_hits2),type="html",row.names = FALSE)
+```
+
+
+```{r p_value_pass2}
+length(which(output_hits2$P.Value < 0.05)) # passed p-value<0.05 threshold
+length(which(output_hits2$adj.P.Val < 0.05)) # passed adjacent f-value < 0.05 threshold
+```
+A lot more genes pass the threshold using this model. However, the context of using condition to group makes more sense for our purposes. 
+
+```{r compare_model1_2}
+model1_pvalues <- data.frame(
+  ensembl_id =output_hits$counts_data.Gene.ID,
+simple_pvalue=output_hits$P.Value)
+
+model2_pvalues <- data.frame(
+  ensembl_id =output_hits2$counts_data.Gene.ID,
+patient_pvalue = output_hits2$P.Value)
+
+two_models_pvalues <- merge(model1_pvalues,
+model2_pvalues,by.x=1,by.y=1)
+two_models_pvalues$colour <- "black"
+two_models_pvalues$colour[
+two_models_pvalues$simple_pvalue<0.05] <- "orange"
+two_models_pvalues$colour[
+two_models_pvalues$patient_pvalue<0.05] <- "blue"
+two_models_pvalues$colour[
+two_models_pvalues$simple_pvalue<0.05 &
+two_models_pvalues$patient_pvalue<0.05] <- "red"
+
+plot(two_models_pvalues$simple_pvalue,
+two_models_pvalues$patient_pvalue,
+col = two_models_pvalues$colour,
+xlab = "condition model p-values",
+ylab ="cell line model p-values",
+main="Condition vs cell line Limma p-value Method")
+```
+
+BH was used as it is the most generic method that applies to most type of data distributions. 
+
+```{r adjust_methods_list_out}
+p.adjust.methods
+```
+
+### EdgeR Quasi liklihood model
+```{r edgeR_quasi}
+d = DGEList(counts=minimalSet, group = exp_groups$sample_group)
+d <- estimateDisp(d, model_design)
+fit <- glmQLFit(d, model_design)
+
+fitting_primary_vs_recurrent <- glmQLFTest(fit)
+
+qlf_output_hits <- topTags(fitting_primary_vs_recurrent,
+sort.by = "PValue",
+n = nrow(minimalSet),
+adjust.method = "BH"
+)
+
+kable(head(qlf_output_hits$table), caption="Quasi Liklihood method results group by condition type") %>% kableExtra::kable_styling()
+```
+
+Number of genes that passed the 0.05 p-value threshold. Only 336 genes are significantly differential expressed.
+Number of genes that passed the correlation
+
+```{r genes_threshold_quasi}
+length(which(qlf_output_hits$table$PValue < 0.05))
+length(which(qlf_output_hits$table$FDR < 0.05))
+```
+
+Repeat the same process, but group by cell line type.
+```{r edgeR_quasi_cell_line}
+d = DGEList(counts=minimalSet, group = exp_groups$cell_line)
+d <- estimateDisp(d, model_design2)
+fit <- glmQLFit(d, model_design2)
+
+fitting_primary_vs_recurrent <- glmQLFTest(fit)
+
+qlf_output_hits2 <- topTags(fitting_primary_vs_recurrent,
+sort.by = "PValue",
+n = nrow(minimalSet),
+adjust.method = "BH"
+)
+
+kable(head(qlf_output_hits2$table), caption="Quasi Liklihood method results group by cell line") %>% kableExtra::kable_styling()
+```
+Genes are significantly more deferentially expressed under different cell line. The sample might not be a good representation of the target study group, or it could be the other way round, the iPSC cell line is not a good presentation of the target study group. 
+
+```{r genes_threshold_quasi2}
+length(which(qlf_output_hits2$table$PValue < 0.05)) # pvalue threshold
+length(which(qlf_output_hits2$table$FDR < 0.05)) # correlation
+```
+Compare the results of the p-value methods for condition grouping.
+```{r comparison_condition}
+qlf_pat_model_pvalues <- data.frame(
+ensembl_id = rownames(qlf_output_hits$table),
+qlf_patient_pvalue=qlf_output_hits$table$PValue)
+
+limma_pat_model_pvalues <- data.frame(
+ensembl_id = output_hits$counts_data.Gene.ID,
+limma_patient_pvalue = output_hits$P.Value)
+
+two_models_pvalues <- merge(qlf_pat_model_pvalues,
+limma_pat_model_pvalues,
+by.x=1,by.y=1)
+two_models_pvalues$colour <- "black"
+two_models_pvalues$colour[two_models_pvalues$qlf_patient_pvalue
+<0.05] <- "orange"
+two_models_pvalues$colour[two_models_pvalues$limma_patient_pvalue
+<0.05] <- "blue"
+two_models_pvalues$colour[two_models_pvalues$qlf_patient_pvalue
+<0.05 &
+two_models_pvalues$limma_patient_pvalue<0.05] <- "red"
+
+two_models_pvalues_subset <-
+two_models_pvalues[which(two_models_pvalues$colour != "black"),]
+
+plot(two_models_pvalues_subset$qlf_patient_pvalue,
+two_models_pvalues_subset$limma_patient_pvalue,
+col = two_models_pvalues_subset$colour,
+xlab = "QLF patient model p-values - only significant",
+ylab ="Limma Patient model p-values Comparison results",
+main="QLF vs Limma group by condition") 
+
+legend_labels <- levels(factor(two_models_pvalues$colour))
+legend("topright", legend=c("N/A","qlf_patient_pvalue", "both", "limma_patient_pvalue"), fill=unique(two_models_pvalues$colour), cex=0.8)
+```
+
+Compare the results of the p-value for cell line grouping.
+
+```{r comparison_cellline}
+qlf_pat_model_pvalues <- data.frame(
+ensembl_id = rownames(qlf_output_hits2$table),
+qlf_patient_pvalue=qlf_output_hits2$table$PValue)
+
+limma_pat_model_pvalues <- data.frame(
+ensembl_id = output_hits2$counts_data.Gene.ID,
+limma_patient_pvalue = output_hits2$P.Value)
+
+two_models_pvalues <- merge(qlf_pat_model_pvalues,
+limma_pat_model_pvalues,
+by.x=1,by.y=1)
+two_models_pvalues$colour <- "black"
+two_models_pvalues$colour[two_models_pvalues$qlf_patient_pvalue
+<0.05] <- "orange"
+two_models_pvalues$colour[two_models_pvalues$limma_patient_pvalue
+<0.05] <- "blue"
+two_models_pvalues$colour[two_models_pvalues$qlf_patient_pvalue
+<0.05 &
+two_models_pvalues$limma_patient_pvalue<0.05] <- "red"
+
+two_models_pvalues_subset <-
+two_models_pvalues[which(two_models_pvalues$colour != "black"),]
+
+plot(two_models_pvalues_subset$qlf_patient_pvalue,
+two_models_pvalues_subset$limma_patient_pvalue,
+col = two_models_pvalues_subset$colour,
+xlab = "QLF patient model p-values - only significant",
+ylab ="Limma Patient model p-values Comparison results",
+main="QLF vs Limma group by cell line") 
+
+egend_labels <- levels(factor(two_models_pvalues$colour))
+legend("topright", legend=c("N/A","qlf_patient_pvalue", "both", "limma_patient_pvalue"), fill=unique(two_models_pvalues$colour), cex=0.8)
+```
+
+## Volcano Plot For down regualred versus up regulated genes
+
+Number of Up-regualted versus down regulated gene sets resulted from Tophis in Quasi
+```{r up_down_regualtion}
+length(which(qlf_output_hits$table$PValue < 0.05
+& qlf_output_hits$table$logFC > 0))
+
+length(which(qlf_output_hits$table$PValue < 0.05
+& qlf_output_hits$table$logFC < 0))
+```
+
+Created with reference to online resources @noauthor_volcano_2022.
+```{r Volcano Plot condition, fig.height=7, fig.width=10}
+# Create a basic volcano plot
+
+volcano_qlf_output_hits <- qlf_output_hits
+volcano_qlf_output_hits$table$diffexpressed <- "NO"
+
+volcano_qlf_output_hits$table$diffexpressed[volcano_qlf_output_hits$table$logFC > 0.6 & volcano_qlf_output_hits$table$PValue < 0.05] <- "UP"
+
+volcano_qlf_output_hits$table$diffexpressed[volcano_qlf_output_hits$table$logFC< -0.6 & volcano_qlf_output_hits$table$PValue < 0.05] <- "DOWN"
+
+ggplot2::ggplot(
+  data = qlf_output_hits$table, 
+  aes(x = qlf_output_hits$table$logFC, 
+      y = -log10(qlf_output_hits$table$PValue),
+      col = volcano_qlf_output_hits$table$diffexpressed)
+  
+  ) +
+  geom_point() +
+  geom_vline(xintercept = c(-0.5, 0.5), col = "gray", linetype = 'dashed')+
+  geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
+  geom_point(size = 3)+
+  scale_color_manual(values = c("#00AFBB", "grey", "#FFDB6D"), 
+                     labels = c("Downregulated", "Not significant", "Upregulated"))+
+  labs(title = "Volcano Scatter Plot For Quasi results grouped by condition",
+     x = "Log Fold Change",
+     y = "-Log10 P Value",
+     color = "Expression Status") 
+```
+```{r Volcano Plot cell line, fig.height=7, fig.width=10}
+
+volcano_qlf_output_hits2 <- qlf_output_hits2
+volcano_qlf_output_hits2$table$diffexpressed <- "NO"
+
+volcano_qlf_output_hits2$table$diffexpressed[volcano_qlf_output_hits2$table$logFC > 0.6 & volcano_qlf_output_hits2$table$PValue < 0.05] <- "UP"
+
+volcano_qlf_output_hits2$table$diffexpressed[volcano_qlf_output_hits2$table$logFC< -0.6 & volcano_qlf_output_hits2$table$PValue < 0.05] <- "DOWN"
+
+# volcano_qlf_output_hits2$table$diffexpressed[rownames(volcano_qlf_output_hits2$table) == "ENSG00000116218"] <- "NPHS2"
+
+ggplot2::ggplot(
+  data = volcano_qlf_output_hits2$table, 
+  aes(x = qlf_output_hits2$table$logFC, 
+      y = -log10(qlf_output_hits2$table$PValue),
+      col = volcano_qlf_output_hits2$table$diffexpressed)
+  
+  ) +
+  geom_point() +
+  geom_vline(xintercept = c(-0.5, 0.5), col = "gray", linetype = 'dashed')+
+  geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
+  geom_point(size = 3)+
+  scale_color_manual(values = c("#00AFBB", "grey", "#FFDB6D", "black"), 
+                     labels = c("DOWN", "NO", "UP", "NPHS2"))+
+  labs(title = "Volcano Scatter Plot For Quasi results grouped by cell line",
+     x = "Log Fold Change",
+     y = "-Log10 P Value",
+     color = "Expression Status") 
+```
+
+In the paper, the gene NPHS2 ENSG00000116218 was the gene of interest and under modification in their study.
+```{r gene of interest}
+qlf_output_hits$table[rownames(qlf_output_hits$table) == "ENSG00000116218", ]
+qlf_output_hits2$table[rownames(qlf_output_hits2$table) == "ENSG00000116218", ]
+```
+
+### Top hit genes Heatmap of the Quasi liklihood method
+Completed with reference to Lecture 7 @isserlin_bcb420_2024.
+```{r heatmap, fig.height=10, fig.width=12}
+# prepare for heatmap
+top_hits <- rownames(qlf_output_hits$table)[
+qlf_output_hits$table$PValue<0.05]
+
+heatmap_matrix_tophits <- t(
+scale(t(expressionMatrix[which(rownames(expressionMatrix) %in% top_hits),])))
+
+# Top annotation 
+unique_sample_group <- unique(exp_groups$patient)
+unique_sample_groupcolors <- rainbow(n = length(unique_sample_group))
+names(unique_sample_groupcolors) <- unique_sample_group
+
+unique_cell_line <- unique(exp_groups$cell_line)
+unique_cell_linecolors <- rainbow(n = length(unique_cell_line))
+names(unique_cell_linecolors) <- unique_cell_line
+
+ha_pat <- HeatmapAnnotation(df = data.frame(
+sample_gp = exp_groups$sample_group,
+cell_type = exp_groups$cell_line),
+col = list(
+sample_group = unique_sample_groupcolors,
+tumor_type = unique_cell_linecolors),
+show_legend = TRUE)
+
+# draw heatmap
+if(min(heatmap_matrix_tophits) == 0){
+heatmap_col = colorRamp2(c( 0, max(heatmap_matrix_tophits)),
+c( "white", "red"))
+} else {
+heatmap_col = colorRamp2(c(min(heatmap_matrix_tophits), 0,
+max(heatmap_matrix_tophits)),
+c("blue", "white", "red"))
+}
+
+num_colors <- length(unique(exp_groups$sample_group))
+color_vector <- heat.colors(num_colors)
+
+current_heatmap <- ComplexHeatmap::Heatmap(as.matrix(heatmap_matrix_tophits),
+name = "exression level",                         
+cluster_rows = TRUE,
+cluster_columns = TRUE,
+show_row_dend = TRUE,
+show_column_dend = TRUE,
+col=heatmap_col,
+show_column_names = FALSE,
+show_row_names = FALSE,
+show_heatmap_legend = TRUE,
+column_title = "Top Hit Genes from Quasi Heatmap",
+top_annotation = ha_pat
+)# Heatmap
+
+current_heatmap
+
+```
+## Thresholded over-representation analysis (ORA)
+
+Create the list 
+Code developed with reference to lecture 8 @isserlin_bcb420_2024-2 .
+```{r p-value ranked gene list}
+#merge gene names with the top hits 
+# the Threshold used is Quasi.
+qlf_output_hits_withgn <- merge(counts_data[,c("Gene.ID", "Gene.Name")], qlf_output_hits, by.x=1, by.y = 0)
+
+qlf_output_hits_withgn[,"rank"] <- log(qlf_output_hits_withgn$PValue,base =10) * sign(qlf_output_hits_withgn$logFC) 
+
+qlf_output_hits_withgn <- qlf_output_hits_withgn[order(qlf_output_hits_withgn$rank),]
+
+write.table(x=data.frame(genename= qlf_output_hits_withgn$Gene.Name, F_stat= qlf_output_hits_withgn$rank),
+file=file.path(getwd(),"primary_vs_recurrent_ranked_genelist.txt"), sep = "\t",row.names = FALSE, col.names = FALSE,quote = FALSE)
+```
+
+Create list of up-regulated genes and down-regulated genes. Make them available for download and perform enrichment analysis with the file.
+```{r p-vaue ranked gene list}
+upregulated_genes <- qlf_output_hits_withgn$Gene.Name[ which(qlf_output_hits_withgn$PValue < 0.05 & qlf_output_hits_withgn$logFC > 0)]
+downregulated_genes <- qlf_output_hits_withgn$Gene.Name[ which(qlf_output_hits_withgn$PValue < 0.05 & qlf_output_hits_withgn$logFC < 0)]
+
+write.table(x=upregulated_genes, file=file.path(getwd(),"ovrecurrent_upregulated_genes.txt"), sep = "\t",row.names = FALSE, col.names = FALSE,quote = FALSE)
+write.table(x=downregulated_genes, file=file.path(getwd(),"ovrecurrent_downregulated_genes.txt"), sep = "\t",row.names = FALSE, col.names = FALSE,quote = FALSE)
+```
+
+For the results from g:profiler, please visit assignment 2 RNotebook again.
+
+## Intrepretation from ORA results
+
+#### 1.	Do the over-representation results support conclusions or mechanism discussed in the original paper?
+
+The key findings of the paper suggest that the NPHS2 variant lines resulted in reduced functional PODOCIN protein despite reduced the level of PODOCIN protein transcription remained the same, the localization of the mutated PODOCIN protein, namely P118L and R138Q were retained in Endoplasmic Reticulum (ER); R168 and R291 were retained in the Golgi apparatus. 
+
+There is not direct inducation on the regulation of genes in cell cycle, mitotic, G2/M, or DNA replication checkpoint, actomyosin contractile ring assembly and chromosome condensation genes or pathways. 
+
+The analysis above have shown that ell cycle, mitotic, G2/M, and DNA replication checkpoint genes have been up regulated, and genes involved in actomyosin contractile ring assembly and chromosome condensation are down regulated. This could indicate NPHS2 variants may be disrupting normal cell cycle regulation and progression in the podocytes. Destruction of cell cycle leads to fatal consequences such as abnornal proliferation like cancer cell and even cell death. Downregulation of genes involved in actomyosin contractile ring assembly and chromosome condensation means normal function of cell division and cytokineses are interrupted in the mutant cells. In short, NPHS2 has an significant impact on the cell, which further justified why the gene was of interest to the scientists. Further pathway analysis will be interesting to see.
+
+#### 2.	Can you find evidence, i.e. publications, to support some of the results that you see. How does this evidence support your results.
+
+Upond further research, it is noted that downregulation of genes involved in actomyosin contractile ring assembly and chromosome condensation is particularly concerning with previous findings confirming the potential pathway, as it indicates potential impairment of critical podocyte functions. This could contribute to the development of proteinuria and progression to focal segmental glomerulosclerosis (FSGS) observed in patients with NPHS2 variants @noauthor_effect_2022.
+
+Focal segmental glomerulosclerosis (FSGS) can be caused by mutations in the genes NPHS2, ACTN4, TRPC6, and INF2 among others, presenting variable levels of proteinuria, including nephrotic syndrome, that frequently progress to end-stage renal disease (ESRD) @noauthor_effect_2022. 
+
+# Continued Data Exloration - Assignement 3
+
+## Non-Threshold Gene Set Enrichement Analysis
+
+Create the list for running GESA for all genes. 
+Code developed with reference to lecture 8 @isserlin_bcb420_2024-2 .
+```{r p-value ranked gene list rnk file make}
+#merge gene names with the top hits 
+# the Threshold used is Quasi.
+qlf_output_hits_withgn <- merge(counts_data[,c("Gene.ID", "Gene.Name")], qlf_output_hits, by.x=1, by.y = 0)
+
+qlf_output_hits_withgn[,"rank"] <- log(qlf_output_hits_withgn$PValue,base =10) * sign(qlf_output_hits_withgn$logFC) 
+
+qlf_output_hits_withgn <- qlf_output_hits_withgn[order(qlf_output_hits_withgn$rank,decreasing = TRUE),]
+
+head(qlf_output_hits_withgn[, c("Gene.Name","rank")])
+
+write.table(x=data.frame(qlf_output_hits_withgn[, c("Gene.Name","rank")]), file=file.path(getwd(),"ranked.rnk"), sep = "\t",row.names = FALSE, col.names = FALSE,quote = FALSE)
+```
+## Gene Enrichment Map
+GSEA evaluation was ran.
+
+- **GSEA Version:** 4.3.3
+- **Gene Set:** [Human_GOBP_AllPathways_noPFOCR_no_GO_iea_March_01_2024_symbol.gmt](https://download.baderlab.org/EM_Genesets/March_01_2024/Human/)
+- **Ranked List:** ranked.rnk (generated from the R code above in this notebook)
+- **Max Size:** 500
+- **Min Size:** 15
+- **Gene Set Permutation:** 1000
+- **Collapse/Remap to Gene Symbols:** No collapse
+
+
 ## CytoscapePathway and Network Viusualization
+- **Cytoscape Version:** 3.10.2
 
 ## Interpretation and detailed view of results
 
