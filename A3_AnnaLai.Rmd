@@ -200,14 +200,18 @@ d = calcNormFactors(d)
 normalized_count_data <- cpm(d)
 ```
 
-# Continued Data Exloration Journey
+# Continued Data Exloration 3
+## Non-Threshold Gene Set Enrichement Analysis
 ## Gene Enrichment Map
 
-With reference to @noauthor_enrichment_nodate-1.
-```{r enrichment}
 
+```{r non_enrichment}
+normalized_count_data 
 ```
 
+## CytoscapePathway and Network Viusualization
+
+## Interpretation and detailed view of results
 
 ## Citations
 <div id="refs"></div>
