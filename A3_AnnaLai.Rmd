@@ -748,6 +748,8 @@ write.table(x=downregulated_genes, file=file.path(getwd(),"ovrecurrent_downregul
 
 For the results from g:profiler, please visit assignment 2 RNotebook again.
 
+Link to Assignent 2: https://html-preview.github.io/?url=https://github.com/bcb420-2024/Anna_Lai/blob/main/A2_AnnaLai.html 
+
 ## Intrepretation from ORA results
 
 #### 1.	Do the over-representation results support conclusions or mechanism discussed in the original paper?
@@ -784,7 +786,7 @@ head(qlf_output_hits_withgn[, c("Gene.Name","rank")])
 write.table(x=data.frame(qlf_output_hits_withgn[, c("Gene.Name","rank")]), file=file.path(getwd(),"ranked.rnk"), sep = "\t",row.names = FALSE, col.names = FALSE,quote = FALSE)
 ```
 ## Gene Enrichment Map
-GSEA evaluation was ran.
+GSEA evaluation was ran. [GSEA Result  page](".\a3_analysis.GseaPreranked.1712263512608\index.html")
 
 - **GSEA Version:** 4.3.3
 - **Gene Set:** [Human_GOBP_AllPathways_noPFOCR_no_GO_iea_March_01_2024_symbol.gmt](https://download.baderlab.org/EM_Genesets/March_01_2024/Human/)
@@ -795,8 +797,31 @@ GSEA evaluation was ran.
 - **Collapse/Remap to Gene Symbols:** No collapse
 
 
+### Global Histogram of the results
+![Caption: GSEA Enrichment results](.\a3_analysis.GseaPreranked.1712263512608\global_es_histogram.png) 
+```{r gsea_pos}
+gsea_pos <- read.delim("./a3_analysis.GseaPreranked.1712263512608/gsea_report_for_na_pos_1712263512608.tsv", row.names = NULL)
+gsea_pos <- data.frame(gsea_pos)
+head(gsea_pos, 20)
+```
+
+```{r gsea_neg}
+gsea_neg <- read.delim("./a3_analysis.GseaPreranked.1712263512608/gsea_report_for_na_neg_1712263512608.tsv", row.names = NULL)
+gsea_neg <- data.frame(gsea_neg)
+head(gsea_neg, 20)
+```
+
+
 ## CytoscapePathway and Network Viusualization
 - **Cytoscape Version:** 3.10.2
+- **Plug-in:** [EnrichmentMap](https://apps.cytoscape.org/apps/EnrichmentMap)
+- **P-value Cutoff:** 0.005
+- **FDR Q-Value Cutoff:** 0.1
+- **Overlap Coefficient:** 0.5
+- **Total Heap size** was 104M, it took around 10 minutes to build the network diagram. 
+
+![Caption: Paremeters used.](./A3figs/network.png) 
+
 
 ## Interpretation and detailed view of results
 
