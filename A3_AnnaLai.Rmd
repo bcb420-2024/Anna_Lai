@@ -801,4 +801,83 @@ GSEA evaluation was ran.
 ## Interpretation and detailed view of results
 
 ## Citations
+
+### Rpackages 
+Biobase David Robaskiene, Wolfgang Huber, Martin Morgan, Vincent J. Carey, Hervé Pagès, John Quackenbush, Benilton Carvalho, Levi Waldron, Gordon Smyth, Simon Anders, Aaron Lun, Marcel Ramos, et al. (2016). Biobase: Annotation and analysis of genomic experiments. R package version 2.36.0. https://www.bioconductor.org/packages/release/bioc/html/Biobase.html
+
+BiocGenerics Víctor Barrera Rodríguez, Wolfgang Huber, Martin Morgan, Vincent J. Carey, Hervé Pagès, John Quackenbush, Benilton Carvalho, Levi Waldron, Gordon Smyth, Simon Anders, Aaron Lun, Marcel Ramos, et al. (2016). BiocGenerics -- Common utilities for Bioconductor software packages. R package version 0.22.0. https://www.bioconductor.org/packages/release/bioc/html/BiocGenerics.html
+
+BiocParallel Wolfgang Huber, She Wu, Michael Lawrence, Marc Carlson, and Hervé Pagès (2017). BiocParallel: Bioconductor facilities for parallel evaluation of BioC functions. R package version 1.14.0. https://www.bioconductor.org/packages/release/bioc/html/BiocParallel.html
+
+AnnotationDbi Paul Shannon, James Taylor, Thomas Diemer, Steven Wingett, Matthew Waugh, Arul Chinnaiyan, Sean Davis, Mark Dunning, Daniela Amodeo Silva, Scott Wilkinson, Matt Ritchie, Robert Gentleman, Venkat Malladi, Lukas Habegger, Florian Hoefner, et al. (2020). AnnotationHub, OrganismDb, DOSE, rtracklayer, TxDb, GenomicFeatures, VariantAnnotation and Rsamtools infrastructure package dependencies. R package version 1.48.0. https://www.bioconductor.org/packages/release/bioc/html/AnnotationDbi.html
+
+Annotatr Frederik Bak Maegaard, Jakob Ruess, Kasper Daniel Hansen, Morten Nielsen, Lars Juhl Jensen, and Andreas Andrae (2017). Annotatr: Summarization of molecular profile metadata. R package version 1.8.0. https://github.com/fmaegaard/annotatr
+
+Biostrings Martín Díaz, Christoph Schweizer, Wolfgang Huber, Mike Smith, Andrew Gallivan, Mikael Huss, Paul Shannon, and Kjetil Klepstad Thoresen (2018). Extended feature manipulation functionality for Bioconductor. R package version 2.50.0. https://www.bioconductor.org/packages/release/bioc/html/Biostrings.html
+
+IRanges Martin Morgan, Sonali Arora, Yunguen Yousef, Li Kaeman, Peter Hickey, Wei Shi, Tim Triche Jr., Qian Zhang, Xiaojun He, Junjie Liu, Simina Boca, Jimeng Sun, Houtan Noushmehr, Ryan Johnson, and Keith Baggerly (2017). IRanges --- flexible generic frameworks for computational genomics in R. R package version 2.12.0. https://www.bioconductor.org/packages/release/bioc/html/IRanges.html
+
+S4Vectors Martin Morgan, Wolfgang Huber, Duncan Temple Lang, Bernd Fischer, Dan Tenenbaum, Michał Jarczewski, Luke McCarthy, and Frédéric Schütz (2017). Simple, fast, and scalable structured objects for R bioinformatics. R package version 0.18.0. https://www.bioconductor.org/packages/release/bioc/html/S4Vectors.html
+
+GenomicAlignments Martin Morgan, Marco A. Altuna, Manuel Belmadani, Wolfgang Huber, Simon Anders, Hervé Pagès, Jim Robinson, Johannes Rainer, Rafael Irizarry, and Gordon Smyth (2018). Aligned reads and reference sequences handling for S4Vectors. R package version 1.16.0. https://www.bioconductor.org/packages/release/bioc/html/GenomicAlignments.html
+
+SummarizedExperiment Martin Morgan, Sonali Arora, Li Kaemen, Pete Hickey, Wei Shi, Tim Triche Jr., Qian Zhang, Xiaojun He, Junjie Liu, Simina Boca, Jimeng Sun, Houtan Noushmehr, Ryan Johnson, and Keith Baggerly (2017). Manipulating, summarizing, and analyzing high-throughput biological sequence data in R. R package version 1.10.0. https://www.bioconductor.org/packages/release/bioc/html/SummarizedExperiment.html
+
+GenomicFiles Martin Morgan, Marco A. Altuna, Manuel Belmadani, Wolfgang Huber, Simon Anders, Hervé Pagès, Jim Robinson, Johannes Rainer, Rafael Irizarry, and Gordon Smyth (2018). Framework for reading, processing, and writing many aligned sequencing datasets. R package version 1.16.0. https://www.bioconductor.org/packages/release/bioc/html/GenomicFiles.html
+
+GenomeInfoDb Martin Morgan, Wolfgang Huber, Steve Lianoglou, Chris Muir, Simon Anders, Paul Shannon, Isabell Kirchner, and Hervé Pagès (2018). Genome info database system for managing, integrating and querying taxonomic, organisational and release level information for genomic data sets. R package version 1.16.0. https://www.bioconductor.org/packages/release/bioc/html/GenomeInfoDb.html
+
+OrganismDbi Paul Shannon, James Taylor, Thomas Diemer, Steven Wingett, Matthew Waugh, Arul Chinnaiyan, Sean Davis, Mark Dunning, Daniela Amodeo Silva, Scott Wilkinson, Matt Ritchie, Robert Gentleman, Venkat Malladi, Lukas Habegger, Florian Hoefner, et al. (2020). OrganismDb — Basic structure definition and infrastructural implementation for genome databases. R package version 1.30.0. https://www.bioconductor.org/packages/release/bioc/html/OrganismDbi.html
+
+RBGL Martin Morgan, Luka Stojanov, Karl Nordström, Johanna Strömberg, Anna Afzelius, Maria Lindskog, Åsa Klintborg, Bengt Persson, Karolinska Institutet, Fredrik Wiklund, and Ulf Gyllensten (2014). Bioconductor extensions to standard linear algebra routines. R package version 1.50.0. https://www.bioconductor.org/packages/release/bioc/html/RBGL.html
+
+Rgraphviz Martin Krzywinski, Alexey Bashton, Sandra Saverino, Ete Sabai, Jonathan Crabtree, Christian Darabos, François Jehanne, Mathieu Lavigueur, Louis Leclerc, Philippe Lemarchand, Sylvain Legault, Émilien Mauvisseau, Alexandre Poirot, Nicolas Sébastien, Jean-Philippe Uldry, et al. (2017). Graph visualisation with 'dot' and 'neato'; works with R base plots and grid graphics. R package version 2.24.0. https://www.bioconductor.org/packages/release/bioc/html/Rgraphviz.html
+
+rgdal Paolo Corti, Roger Bivand, Massimo Gastaldello, Edzer Pebesma, Achim Zeileis, Brian Ripley, Barry Rowlingson, and Warwick Nash (2019). Bindings for the ‘Geospatial Data Abstraction Library’. R package version 1.5-13. https://cran.r-project.org/web/packages/rgdal/index.html
+
+sp Depeng Jiang, Edzer Pebesma, Virginie Taillandier, Olaf Manke, Christopher Goldsmith, François Gillet, Lionel Henry, Mario Francois, Graham Williamson, Sebastian Meier, Luciano Andrade de Freitas, Alan Paluzzi, Mauricio Zamboni, Jannes Muenchow, et al. (2019). Classes and Methods for Spatially Referenced Data. R package version 1.3-2. https://cran.r-project.org/web/packages/sp/index.html
+
+Matrix Stefan Milton Bache, Douglas Bates, Martin Maechler, Paul Eilers, Kurt Hornik, Friedrich Leisch, Soeren Molnar, Ingo Feinerer, Stefano Barbi, Evgeniy Semenyshyn, Richard Cotton, Peter Dalgaard, Ross Ihaka, Henrik Bengtsson, Hadley Wickham, et al. (2019). Sparse and dense matrix classes and methods. R package version 1.2-18. https://cran.r-project.org/web/packages/Matrix/index.html
+
+DelayedArray Gustavo De Los Campos, Simon Anders, Wolfgang Huber, Martin Morgan, and Gordon Smyth (2019). Delays the computation of elements of arrays until actually accessed. R package version 0.10.0. https://www.bioconductor.org/packages/release/bioc/html/DelayedArray.html
+
+Biobase - Annotation and analysis of genomic experiments David Robaskiene, Wolfgang Huber, Martin Morgan, Vincent J. Carey, Hervé Pagès, John Quackenbush, Benilton Carvalho, Levi Waldron, Gordon Smyth, Simon Anders, Aaron Lun, Marcel Ramos, et al. (2016). Biobase: Annotation and analysis of genomic experiments. R package version 2.36.0. https://www.bioconductor.org/packages/release/bioc/html/Biobase.html
+
+RSQLite RSQLite Development Team (2020). SQLite interface for R. R package version 2.2.1. https://cran.r-project.org/web/packages/RSQLite/index.html
+
+readr Kerby Shedden (2019). Read rectangular text data. R package version 1.3.1. https://cran.r-project.org/web/packages/readr/index.html
+
+utils - R: The R Language and Environment Core Team (2020). Miscellaneous functions useful for statistics. R package version 4.0.2. https://cran.r-project.org/web/packages/utils/index.html
+
+base - R: The R Language and Environment Core Team (2020). The basic system. R package version 4.0.2. https://cran.r-project.org/web/packages/base/index.html
+
+dplyr Hadley Wickham, Romain François, Lionel Henry, Kirill Müller, and Ian Lyttle (2020). A Grammar of Data Manipulation. R package version 1.0.2. https://cran.r-project.org/web/packages/dplyr/index.html
+
+gplots Tal Galili (2019). Various R programming tools for plotting data. R package version 3.0.1.1. https://cran.r-project.org/web/packages/gplots/index.html
+
+reshape2 Hadley Wickham (2020). Flexibly restructure and aggregate data. R package version 1.4.4. https://cran.r-project.org/web/packages/reshape2/index.html
+
+RColorBrewer Erich Neuwirth (2014). ColorBrewer palettes for R. R package version 1.1-2. https://cran.r-project.org/web/packages/RColorBrewer/index.html
+
+grid - R: The R Language and Environment Core Team (2020). Grid Graphics. R package version 4.0.2. https://cran.r-project.org/web/packages/grid/index.html
+
+edgeR Robinson MD, McCarthy DJ, Smyth GK (2010). EdgeR: a Bioconductor package for differential expression analysis of digital gene expression data. Bioinformatics, 26(1), 139–140. doi:10.1093/bioinformatics/btp616. PMID: 20010072.
+
+biomaRt Huérlimann A, Harmston N, Marjoram P, Brazma A (2020). biomaRt: Tools to retrieve data from Ensembl databases. Bioinformatics, 36(13), 4296–4298. doi:10.1093/bioinformatics/btaa256. PMID: 32105589.
+
+knitr Yihui Xie (2019). Dynamic report generation with R and knitr. R package version 1.26. https://cran.r-project.org/web/packages/knitr/index.html
+
+kableExtra Hao Zhu (2019). Construct Complex Table with kables and pipe Syntax. R package version 1.1.0. https://cran.r-project.org/web/packages/kableExtra/index.html
+
+GEOquery Diego Rivas (2016). Querying GEO and arrayExpress Experiments Using Bioconductor. R package version 2.50.0. https://www.bioconductor.org/packages/release/bioc/html/GEOquery.html
+
+devtools Hadley Wickham (2020). Tools to Make Developing R Code Easier. R package version 2.3.0. https://cran.r-project.org/web/packages/devtools/index.html
+
+ComplexHeatmap Zuguang Gu (2018). Visualize complex heatmaps interactively. R package version 2.2.0. https://cran.r-project.org/web/packages/ComplexHeatmap/index.html
+
+colorRamp2 Greg Jefferis (2019). Colour gradient functions, especially rampPalette(). R package version 2.3. https://cran.r-project.org/web/packages/colorRamp2/index.html
+
+ggplot2 Hadley Wickham (2016). Create elegant, informative ggplots. R package version 3.2.1. https://cran.r-project.org/web/packages/ggplot2/index.html
+
+### Documents
 <div id="refs"></div>
