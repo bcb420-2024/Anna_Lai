@@ -798,7 +798,7 @@ GSEA evaluation was ran. [GSEA Result  page](".\a3_analysis.GseaPreranked.171226
 
 
 ### Global Histogram of the results
-![Caption: GSEA Enrichment results](.\a3_analysis.GseaPreranked.1712263512608\global_es_histogram.png) 
+![Figure A3.1: GSEA Enrichment results](.\a3_analysis.GseaPreranked.1712263512608\global_es_histogram.png) 
 ```{r gsea_pos}
 gsea_pos <- read.delim("./a3_analysis.GseaPreranked.1712263512608/gsea_report_for_na_pos_1712263512608.tsv", row.names = NULL)
 gsea_pos <- data.frame(gsea_pos)
@@ -815,13 +815,41 @@ head(gsea_neg, 20)
 ## CytoscapePathway and Network Viusualization
 - **Cytoscape Version:** 3.10.2
 - **Plug-in:** [EnrichmentMap](https://apps.cytoscape.org/apps/EnrichmentMap)
-- **P-value Cutoff:** 0.005
-- **FDR Q-Value Cutoff:** 0.1
+- **P-value Cutoff:** 0.05
+- **FDR Q-Value Cutoff:** 0.075
+- **Cutoff:** 0.375
+- **Data Set Edges:** Automatic
 - **Overlap Coefficient:** 0.5
-- **Total Heap size** was 104M, it took around 10 minutes to build the network diagram. 
 
-![Caption: Paremeters used.](./A3figs/network.png) 
+![Figure A3.2: Network](./A3figs/network.png) 
+![Figure A3.3: Network annotated with Biological Process.](./A3figs/annotated_bio.png) 
+```{r network_cluster_name, warning=FALSE, message=FALSE}
+input_file <- "./A3figs/annotated_bio_cluster_names.txt" 
+content <- read_tsv(input_file)
 
+datagram <- content %>%
+    mutate(`Node Count` = as.numeric(Nodes)) %>%
+    rename(NodeCount = Nodes) %>%
+    arrange(desc(NodeCount))
+
+datagram
+```
+
+
+![Figure A3.3: Network annotated with Gene name.](./A3figs/annotated.png) 
+```{r network_cluster_name_gene_name, warning=FALSE, message=FALSE}
+input_file <- "./A3figs/annotated_cluster_names.txt" 
+content <- read_tsv(input_file)
+
+datagram <- content %>%
+    mutate(`Node Count` = as.numeric(Nodes)) %>%
+    rename(NodeCount = Nodes) %>%
+    arrange(desc(NodeCount))
+
+datagram
+```
+
+![Figure A3.4: Word Cloud.](./A3figs/cloud.png) 
 
 ## Interpretation and detailed view of results
 
