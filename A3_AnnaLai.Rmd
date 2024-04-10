@@ -853,6 +853,36 @@ datagram
 
 ## Interpretation and detailed view of results
 
+## Drug target analysis
+
+### Creation parameters
+#### Cut-Off Values
+- **P-value cutoff:** 0.05
+- **FDR Q-value cutoff:** 0.1
+- **Jaccard Overlap Combined cutoff:** 0.375
+- **Test used:** Jaccard Overlap Combined Index (k constant = 0.5)
+
+#### Data Sets
+- **Main data set:** `a3_analysis.GseaPreranked`
+- **Gene sets file:** `...\Anna_Lai\Human_GOBP_AllPathways_noPFOCR_no_GO_iea_March_01_2024_symbol.gmt`
+- **Data files:** 
+  - `...\a3_analysis.GseaPreranked.1712263512608\gsea_report_for_na_pos_1712263512608.tsv`
+  - `...\a3_analysis.GseaPreranked.1712263512608\gsea_report_for_na_neg_1712263512608.tsv`
+- **Expression file:** `...\Anna_Lai\ranked.rnk`
+- **Ranks file:** `...\a3_analysis.GseaPreranked.1712263512608\ranked_gene_list_na_pos_versus_na_neg_1712263512608.tsv`
+- **Positive phenotype:** `na_pos`
+- **Negative phenotype:** `na_neg`
+
+#### Signature Data Sets
+- **Signature data set:** `Human_DrugBank_approved_symbol`
+- **Gene sets file:** `...\Anna_Lai\Human_DrugBank_approved_symbol.gmt`
+- **Source:** local file
+- **Filter type:** Mann-Whitney (Two-Sided)
+
+#### Ranking Method
+- **a3_analysis.GseaPreranked:** ranks: `GSEARanking`
+
+
 ## Citations
 
 ### Rpackages 
