@@ -883,6 +883,34 @@ datagram
 - **a3_analysis.GseaPreranked:** ranks: `GSEARanking`
 
 
+![Figure A3.5: Enhanced the network graph with approved huamn drugs.](./A3figs/drug_network.png) 
+![Figure A3.6: Top drugs filtered by Mann-Whitney (Two-Sided) method.](./A3figs/drug_two_sided.png) 
+
+![Figure A3.7: Top drugs filtered by Mann-Whitney (One Side, Less than) method just for comparison.](./A3figs/drug.png) 
+
+The top effective drugs are still NADH and Copper.
+**Significant genes interacting with NADH:**
+```{r nadh, warning=FALSE, message=FALSE}
+input_file <- "./A3figs/nadh.txt" 
+content <- read_tsv(input_file)
+
+head(content, 20)
+```
+
+PFKFB2 has a rank of 3.64, which is the highest. From the search in the network, NADH targets 3 pathways found.
+
+#### Interesting Observation
+Succinic acid is targeting a lot of clusters of genes. 
+![Figure A3.8: Enhanced the network graph with approved huamn drugs.](./A3figs/succ.png) 
+
+**Gene with high rank targed by Succinic acid:**
+```{r succ, warning=FALSE, message=FALSE}
+input_file <- "./A3figs/succinic_acid.txt" 
+content <- read_tsv(input_file)
+
+head(content, 20)
+```
+
 ## Citations
 
 ### Rpackages 
