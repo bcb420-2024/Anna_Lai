@@ -882,7 +882,6 @@ datagram
 #### Ranking Method
 - **a3_analysis.GseaPreranked:** ranks: `GSEARanking`
 
-
 ![Figure A3.5: Enhanced the network graph with approved huamn drugs.](./A3figs/drug_network.png) 
 ![Figure A3.6: Top drugs filtered by Mann-Whitney (Two-Sided) method.](./A3figs/drug_two_sided.png) 
 
@@ -896,8 +895,10 @@ content <- read_tsv(input_file)
 
 head(content, 20)
 ```
+From the search function in the network produced in Cytoscape, NADH targets 3 pathways found.
 
-PFKFB2 has a rank of 3.64, which is the highest. From the search in the network, NADH targets 3 pathways found.
+PFKFB2 has a rank of 3.64, which is the highest. Upon further research, PFKFB2 is highly expressed in the heart and is responsible for up-regulating glycolysis in response to insulin and adrenergic signaling. It doesn't seem like it is directly related to kidney disease. 
+
 
 #### Interesting Observation
 Succinic acid is targeting a lot of clusters of genes. 
@@ -910,6 +911,8 @@ content <- read_tsv(input_file)
 
 head(content, 20)
 ```
+
+However, as succinic acid is a small molecule and is widely studied, it might have just be a result of bias, any potential connections to renal disorders appear to be tangential at this stage. Therefore it is fair to say this is not directly related to kidney diease, hence not of our interest.
 
 ## Citations
 
