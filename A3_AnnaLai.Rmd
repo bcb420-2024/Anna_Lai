@@ -888,6 +888,7 @@ datagram
 ![Figure A3.7: Top drugs filtered by Mann-Whitney (One Side, Less than) method just for comparison.](./A3figs/drug.png) 
 
 The top effective drugs are still NADH and Copper.
+
 **Significant genes interacting with NADH:**
 ```{r nadh, warning=FALSE, message=FALSE}
 input_file <- "./A3figs/nadh.txt" 
@@ -898,6 +899,11 @@ head(content, 20)
 From the search function in the network produced in Cytoscape, NADH targets 3 pathways found.
 
 PFKFB2 has a rank of 3.64, which is the highest. Upon further research, PFKFB2 is highly expressed in the heart and is responsible for up-regulating glycolysis in response to insulin and adrenergic signaling. It doesn't seem like it is directly related to kidney disease. 
+
+### Potential Drug use, Atenimol
+Fostamatinib, artenimol (DB11638), and Cholic Acid follow NADH and Copper to be the most effective targets. Upong further research, Fosamatinb and Cholic Acid are both not directly related to kidney function. 
+
+According to the drug bank, Artenimol is a derivative of artemisinin. 
 
 
 #### Interesting Observation
@@ -913,6 +919,10 @@ head(content, 20)
 ```
 
 However, as succinic acid is a small molecule and is widely studied, it might have just be a result of bias, any potential connections to renal disorders appear to be tangential at this stage. Therefore it is fair to say this is not directly related to kidney diease, hence not of our interest.
+
+Based on the paper "The Therapeutic Effect of Artemisinin and Its Derivatives in Kidney Disease" Artemisinin does not directly investigate whether artemisinin targets the NPHS2 gene. However, evidence from the paper revealed the therapeutic power of Atenmisinin's anti-inflammatory, antioxidant, and immunoregulatory properties in treating kidney diseases. 
+
+A possible next step or idea for experimentation can be run essays to see if NPHS2 interacts, or is affected by Artenmisinin.
 
 ## Citations
 
